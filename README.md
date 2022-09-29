@@ -9,7 +9,7 @@
  2. 여행 관련 포스트 일시 알맞는 여행 테마로 분류
 
 ### Place Recommender
- 위치 태그 추천시스템을 활용
+ 위치 태그 추천시스템
  
  추천 알고리즘 :
   Hybrid Recommender System
