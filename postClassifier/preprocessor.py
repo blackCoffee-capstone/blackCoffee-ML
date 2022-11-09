@@ -7,11 +7,13 @@ class PreProcessor():
     ):
         return
 
+
     def __call__(
         self,
         input_string
     ):
         return self.preProcess(input_string)
+
 
     def preProcess(
         self,
@@ -28,6 +30,7 @@ class PreProcessor():
 
         return output_string
     
+
     def _isNonKorean(
         self,
         input_string
@@ -38,6 +41,7 @@ class PreProcessor():
 
         else:
             return False
+
 
     def _isNonEnglish(
         self,
@@ -50,6 +54,7 @@ class PreProcessor():
         else:
             return False
 
+
     def _removeEmoji(
         self,
         input_string
@@ -57,12 +62,14 @@ class PreProcessor():
         output_string = input_string
         return output_string
 
+
     def _addSpaceAfterPunctuation(
         self,
         input_string
     ):
         output_string = input_string
         return output_string
+
 
     def _addSpaceBeforeHashtag(
         self,
@@ -79,3 +86,19 @@ class PreProcessor():
         output_string = input_string
         return output_string
 
+
+def testPreProcessor():
+    dfTestData = pd.read_excel("testingData\preProcessingTextTestSet.xlsx")
+    
+    testData = [{'input':x, 'output':y} for x, y in zip(dfTestData['raw'], dfTestData['processed'])]
+    preProcessor = PreProcessor()
+
+    errors = []
+
+    for pair in testData:
+        if not preProcessor(pair['input']) == pair['output'] :
+            errors.append('Failed')
+        else:
+            errors.append(None)
+
+    assert not errors
