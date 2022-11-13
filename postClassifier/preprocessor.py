@@ -66,16 +66,21 @@ class PreProcessor():
         self,
         input_string
     ):
-        
-        regrex_pattern = re.compile(pattern = "["
-            u"\U0001F600-\U0001F64F"  # emoticons
-            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-            u"\U0001F680-\U0001F6FF"  # transport & map symbols
+        ##http://www.unicode.org/charts/
+        emoj = re.compile("["
+            u"\U00002700-\U000027BF"  # Dingbats
+            u"\U0001F600-\U0001F64F"  # Emoticons
             u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-        "]+", flags = re.UNICODE)
-        
-        output_string = regrex_pattern.sub(r'',input_string)
+            u"\U00002600-\U000026FF"  # Miscellaneous Symbols
+            u"\U0001F300-\U0001F5FF"  # Miscellaneous Symbols And Pictographs
+            u"\U0001F900-\U0001F9FF"  # Supplemental Symbols and Pictographs
+            u"\U0001FA70-\U0001FAFF"  # Symbols and Pictographs Extended-A
+            u"\U0001F680-\U0001F6FF"  # Transport and Map Symbols
+        "]+", re.UNICODE)
 
+
+        output_string = emoj.sub(r'',input_string)
+        
         return output_string
 
 
