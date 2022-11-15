@@ -1,4 +1,4 @@
-from utils import DataLoader
+from utils import OneClassClassificationDataset
 import sys
 import pandas as pd
 import numpy as np
@@ -25,44 +25,7 @@ saved_path  = './saved_model/'
 device = 'cuda' if cuda.is_available() else 'cpu'
 print(device)
 torch.cuda.empty_cache() 
-epsilon = sys.float_info.epsilon
-class FakeReviewDataset(Dataset):
-
-    def __init__(self, dataframe, tokenizer, input_max_len):
-        self.tokenizer  = tokenizer 
-        self.data       = dataframe
-        self.input_text = self.data['REVIEW_TEXT']
-        self.labels     = self.data['LABEL']
-        self.input_max_len = input_max_len
-        
-    def classes(self):
-        return self.labels
-    
-    def __len__(self):
-        return len(self.labels)
-
-    def __getitem__(self, index):
-        input_text = str(self.input_text[index])
-        input_text = ' '.join(input_text.split())
-        input_text = self.tokenizer([input_text],
-                                    padding = 'max_length',
-                                    max_length=self.input_max_len,
-                                    truncation = True,
-                                    return_tensors="pt")
-
-        input_text_ids = input_text['input_ids'].squeeze()
-        input_mask     = input_text['attention_mask']
-        
-        labels_y       = self.labels[index]
-        labels_y       = labels[labels_y]
-        labels_y       = torch.tensor([labels_y])
-        
-        return {
-            'input_text_ids' : input_text_ids.to(dtype=torch.long),
-            'input_mask'     : input_mask.to(dtype=torch.long),
-            'labels_y'       : labels_y.to(dtype=torch.long)
-        }
-        
+epsilon = sys.float_info.epsilon        
 
 def train(
     epoch,
@@ -156,9 +119,7 @@ def main():
     config.LEARNING_RATE = 4.00e-05 # learning rate (default: 0.01)
     config.SEED = 420               # random seed (default: 42)
     config.MAX_LEN = 512
-    
-    
-    
+
     train_params = {
         'batch_size': config.TRAIN_BATCH_SIZE,
         'shuffle': True,
@@ -180,9 +141,7 @@ def main():
     dftrainset.reset_index(drop=True, inplace=True)
     dftestset.reset_index(drop=True, inplace=True)
     
-    
-    tokenizer = KoBERTTokenizer.from_pretrained('bert-base-uncased')
-    
+    tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
     training_set = FakeReviewDataset(dftrainset, tokenizer, config.MAX_LEN)
     test_set     = FakeReviewDataset(dftestset , tokenizer, config.MAX_LEN)
     
@@ -192,7 +151,8 @@ def main():
     print(dftrainset.sample(10))
     print("TRAIN Dataset: {}".format(dftrainset.shape))
 
-    model = BertModel.from_pretrained('skt/kobert-base-v1')
+    bertmodel = BertModel.from_pretrained('skt/kobert-base-v1')
+    model = KoBERTforSequenceClassification(bertmodel, num_classes = 20)
     model.to(device)
     optimizer = torch.optim.Adam(params =  model.parameters(), lr=config.LEARNING_RATE)
     #optimizer = AdamW(params=model.parameters(), lr=config.LEARNING_RATE, eps=epsilon, correct_bias=False) 
