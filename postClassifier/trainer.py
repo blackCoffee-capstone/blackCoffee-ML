@@ -1,31 +1,25 @@
-from utils import OneClassClassificationDataset
-import sys
-import pandas as pd
-import numpy as np
 import torch
-from torch import nn
-from torch import optim
+import torch.nn as nn
 from torch import cuda
-from torch.utils.data import DataLoader, Dataset
+import pandas as pd
+import sys
+import wandb
+from datetime import datetime
+from transformers import BertModel, BertForSequenceClassification
+from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from kobert_tokenizer import KoBERTTokenizer
-from transformers import BertModel
 
-import wandb
+from model import KoBERTforSequenceClassification
+from utils import PostClassificationDataset
 
-labels = {
-          '__label1__' : 0, 
-          '__label2__' : 1
-          }
-#__label1__ is travel related
-#__label2__ is un related          
-save_path = './saved_model'
-saved_path  = './saved_model/'
+save_path = './saved_model/thm_' + datetime.now().strftime("%y%m%d_%H%M%S")
+saved_path  = './saved_model/thm_'
 
 device = 'cuda' if cuda.is_available() else 'cpu'
 print(device)
 torch.cuda.empty_cache() 
-epsilon = sys.float_info.epsilon        
+epsilon = sys.float_info.epsilon   
 
 def train(
     epoch,
@@ -46,7 +40,7 @@ def train(
         ids  = data['input_text_ids'].to(device, dtype = torch.long)
         mask = data['input_mask'].to(device, dtype = torch.long)
         
-        outputs = model(input_ids = ids, attention_mask = mask, labels=y)
+        outputs = model.forward(input_ids = ids, attention_mask = mask, labels=y)
         
         loss = outputs[0]
         logits = outputs.logits
@@ -54,7 +48,7 @@ def train(
         
         correct = pred.eq(y)
         total_correct += correct.sum().item()
-        total_len += len(labels)
+        total_len += len(y)
         loss.backward()
         optimizer.step()
         
@@ -82,11 +76,9 @@ def validate(epoch, tokenizer, model, device, loader):
             ids  = data['input_text_ids'].to(device, dtype = torch.long)
             mask = data['input_mask'].to(device, dtype = torch.long)
   
-            logits = model(input_ids = ids, attention_mask = mask).logits
+            logits = model.forward(input_ids = ids, attention_mask = mask).logits
             predicted_class_id = torch.argmax(F.softmax(logits,dim=1), dim=1)
-            
-            #print(predicted_class_id.item())
-            
+
             if predicted_class_id.item() == 1 :
                 if predicted_class_id.item() == y.item() :
                     tp += 1
@@ -109,7 +101,7 @@ def validate(epoch, tokenizer, model, device, loader):
     return precision, recall, f1, acc
     
 def main():
-    wandb.init(project="BERT_Fake_Review_Detection results")
+    wandb.init(project="Post Theme")
     
     config = wandb.config           # Initialize config
     config.TRAIN_BATCH_SIZE = 32    # input batch size for training (default: 64)
@@ -134,28 +126,28 @@ def main():
     
     torch.backends.cudnn.deterministic = True
     
-    dfdataset  = pd.read_csv('fakeReviewDetectionDataset/amazon_reviews.txt', delimiter='\t')
+    dfdataset  = pd.read_excel('testingData/instagram_post.xlsx')
     dftrainset = dfdataset.sample(frac=0.8,random_state=config.SEED)
     dftestset  = dfdataset.drop(dftrainset.index)
     dftrainset.reset_index(drop=True, inplace=True)
     dftestset.reset_index(drop=True, inplace=True)
     
     tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
-    training_set = FakeReviewDataset(dftrainset, tokenizer, config.MAX_LEN)
-    test_set     = FakeReviewDataset(dftestset , tokenizer, config.MAX_LEN)
+    training_set = PostClassificationDataset(dftrainset, tokenizer, config.MAX_LEN)
+    test_set     = PostClassificationDataset(dftestset , tokenizer, config.MAX_LEN)
     
     train_loader = DataLoader(training_set, **train_params)
     test_loader  = DataLoader(test_set, **val_params)
     
     print(dftrainset.sample(10))
     print("TRAIN Dataset: {}".format(dftrainset.shape))
-
-    bertmodel = BertModel.from_pretrained('skt/kobert-base-v1')
-    model = KoBERTforSequenceClassification(bertmodel, num_classes = 20)
-    model.to(device)
-    optimizer = torch.optim.Adam(params =  model.parameters(), lr=config.LEARNING_RATE)
-    #optimizer = AdamW(params=model.parameters(), lr=config.LEARNING_RATE, eps=epsilon, correct_bias=False) 
     
+    model = BertForSequenceClassification.from_pretrained('skt/kobert-base-v1',
+                                                          num_labels = 21,
+                                                          output_attentions=False,
+                                                          output_hidden_states=False)
+    model.to(device)
+    optimizer = torch.optim.Adam(params =  model.parameters(), lr=config.LEARNING_RATE)   
     
     for epoch in range(config.TRAIN_EPOCHS):
         print(str(epoch + 1), ': ',"Training")
@@ -167,8 +159,5 @@ def main():
     print("saving parameter")
     model.save_pretrained(save_path)
        
-
-
-    
 if __name__ == '__main__':
     main()

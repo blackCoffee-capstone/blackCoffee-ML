@@ -13,8 +13,8 @@ from kobert_tokenizer import KoBERTTokenizer
 from model import KoBERTforSequenceClassification
 from utils import OneClassClassificationDataset
 
-save_path = './saved_model_occ'
-saved_path  = './saved_model_occ'
+save_path = './saved_model_/occ' + datetime.strftime("%Y%m%d_%H%M%S")
+saved_path  = './saved_model_/occ'
 
 device = 'cuda' if cuda.is_available() else 'cpu'
 print(device)
@@ -78,9 +78,7 @@ def validate(epoch, tokenizer, model, device, loader):
   
             logits = model.forward(input_ids = ids, attention_mask = mask).logits
             predicted_class_id = torch.argmax(F.softmax(logits,dim=1), dim=1)
-            
-            #print(predicted_class_id.item())
-            
+
             if predicted_class_id.item() == 1 :
                 if predicted_class_id.item() == y.item() :
                     tp += 1
@@ -143,15 +141,10 @@ def main():
     
     print(dftrainset.sample(10))
     print("TRAIN Dataset: {}".format(dftrainset.shape))
-
-    #bertmodel = BertModel.from_pretrained('skt/kobert-base-v1')
-    #model = KoBERTforSequenceClassification(bertmodel, num_classes = 2)
     
     model = BertForSequenceClassification.from_pretrained('skt/kobert-base-v1')
     model.to(device)
-    optimizer = torch.optim.Adam(params =  model.parameters(), lr=config.LEARNING_RATE)
-    #optimizer = AdamW(params=model.parameters(), lr=config.LEARNING_RATE, eps=epsilon, correct_bias=False) 
-    
+    optimizer = torch.optim.Adam(params =  model.parameters(), lr=config.LEARNING_RATE)   
     
     for epoch in range(config.TRAIN_EPOCHS):
         print(str(epoch + 1), ': ',"Training")
