@@ -134,7 +134,6 @@ def main():
     
     torch.backends.cudnn.deterministic = True
     
-    
     dfdataset  = pd.read_csv('fakeReviewDetectionDataset/amazon_reviews.txt', delimiter='\t')
     dftrainset = dfdataset.sample(frac=0.8,random_state=config.SEED)
     dftestset  = dfdataset.drop(dftrainset.index)
