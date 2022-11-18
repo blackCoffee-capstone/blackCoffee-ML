@@ -105,20 +105,28 @@ class PostClassificationDataset(Dataset):
     def __len__(self):
         return len(self.labels)
     
-    def _get_first_tag(
+    def _get_theme_id(
         self,
         input_tags,
     ):  
-        first_tag = input_tags.split(", ")[0]
-        return first_tag
-
+        input_tags = str(input_tags)
+        tags = input_tags.split(", ")
+        try :
+            theme_id = self.labels_dict[tags[0]]
+        except :
+            try : 
+                theme_id = self.labels_dict[tags[1]]
+            except :
+                theme_id = 20
+        return theme_id
 
     def __getitem__(
         self, 
         index
     ):
         input_text = str(self.input_text[index])
-        input_text = PreProcessor(input_text)
+        myPreProcessor = PreProcessor()
+        input_text = myPreProcessor(input_text)
         input_text = ' '.join(input_text.split())
         input_text = self.tokenizer([input_text],
                                     padding = 'max_length',
@@ -129,9 +137,7 @@ class PostClassificationDataset(Dataset):
         input_text_ids = input_text['input_ids'].squeeze()
         input_mask     = input_text['attention_mask']
         
-        labels_y       = labels[index]
-        labels_y       = self._get_first_tag(labels_y)
-        labels_y       = labels_dict[labels_y]
+        labels_y       = self._get_theme_id(self.labels[index])
         labels_y       = torch.tensor([labels_y])
         
         return {
@@ -210,5 +216,36 @@ def testOneClassClassificationDataset():
         
         print(data['labels_y'])
 
+    assert False
+
+def testClassificationDataset():
+    dfdataset  = pd.read_excel('testingData/instagram_post.xlsx')
+    dftrainset = dfdataset.sample(frac=0.8,random_state=420)
+    dftestset  = dfdataset.drop(dftrainset.index)
+    dftrainset.reset_index(drop=True, inplace=True)
+    dftestset.reset_index(drop=True, inplace=True)
+    
+    tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
+    training_set = PostClassificationDataset(dftrainset, tokenizer, 512)
+    test_set     = PostClassificationDataset(dftestset , tokenizer, 512)
+    
+    train_params = {
+        'batch_size': 1,
+        'shuffle': True,
+        'num_workers': 0
+        }
+
+    val_params = {
+        'batch_size': 1,
+        'shuffle': False,
+        'num_workers': 0
+        }
+
+    train_loader = DataLoader(training_set, **train_params)
+    test_loader  = DataLoader(test_set, **val_params)
+    
+    for _, data in enumerate(train_loader, 0):
+        
+        print(data['labels_y'])
 
     assert False
