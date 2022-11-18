@@ -1,10 +1,15 @@
-from preprocessor import PreProcessor
+#-*- coding: utf-8 -*-
+
+import requests
 import torch
-import request, json
+import pandas as pd
 from torch import nn
 from torch import optim
 from torch import cuda
 from torch.utils.data import DataLoader, Dataset
+from kobert_tokenizer import KoBERTTokenizer
+
+from preprocessor import PreProcessor
 
 class OneClassClassificationDataset(Dataset):
 
@@ -13,7 +18,7 @@ class OneClassClassificationDataset(Dataset):
         dataframe, 
         tokenizer, 
         input_max_len,
-        labels_dict = {'__label1__' : 0, '__label2__' : 1}, 
+        labels_dict = {'true' : 0, '__label2__' : 1}, 
     ):
         self.tokenizer  = tokenizer 
         self.data       = dataframe
@@ -33,14 +38,19 @@ class OneClassClassificationDataset(Dataset):
         index
     ):
         input_text = str(self.input_text[index])
-        input_text = PreProcessor(input_text)
+        myPreProcessor = PreProcessor()
+        input_text = myPreProcessor(input_text)
         input_text = ' '.join(input_text.split())
-        input_text = self.tokenizer.encode_plus(input_text)
+        input_text = self.tokenizer([input_text],
+                                    padding = 'max_length',
+                                    max_length=self.input_max_len,
+                                    truncation = True,
+                                    return_tensors="pt")
 
         input_text_ids = input_text['input_ids'].squeeze()
         input_mask     = input_text['attention_mask']
-        
-        if labels[index] == True :
+     
+        if self.labels[index] == True :
             labels_y = 0
         else :
             labels_y = 1
@@ -110,7 +120,11 @@ class PostClassificationDataset(Dataset):
         input_text = str(self.input_text[index])
         input_text = PreProcessor(input_text)
         input_text = ' '.join(input_text.split())
-        input_text = self.tokenizer.encode_plus(input_text)
+        input_text = self.tokenizer([input_text],
+                                    padding = 'max_length',
+                                    max_length=self.input_max_len,
+                                    truncation = True,
+                                    return_tensors="pt")
 
         input_text_ids = input_text['input_ids'].squeeze()
         input_mask     = input_text['attention_mask']
@@ -164,3 +178,37 @@ class DataExporter():
         address = self._get_address(lat,lng)
 
         return
+
+
+def testOneClassClassificationDataset():
+    dfdataset  = pd.read_excel('testingData/instagram_post.xlsx')
+    dftrainset = dfdataset.sample(frac=0.8,random_state=420)
+    dftestset  = dfdataset.drop(dftrainset.index)
+    dftrainset.reset_index(drop=True, inplace=True)
+    dftestset.reset_index(drop=True, inplace=True)
+    
+    tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
+    training_set = OneClassClassificationDataset(dftrainset, tokenizer, 512)
+    test_set     = OneClassClassificationDataset(dftestset , tokenizer, 512)
+    
+    train_params = {
+        'batch_size': 32,
+        'shuffle': True,
+        'num_workers': 0
+        }
+
+    val_params = {
+        'batch_size': 1,
+        'shuffle': False,
+        'num_workers': 0
+        }
+
+    train_loader = DataLoader(training_set, **train_params)
+    test_loader  = DataLoader(test_set, **val_params)
+    
+    for _, data in enumerate(train_loader, 0):
+        
+        print(data['labels_y'])
+
+
+    assert False
