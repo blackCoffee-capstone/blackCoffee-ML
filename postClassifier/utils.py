@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
 import requests
+import json
 import torch
 import pandas as pd
 from torch import nn
@@ -31,7 +32,7 @@ class OneClassClassificationDataset(Dataset):
         return self.labels
     
     def __len__(self):
-        return len(self.labels)
+        return len(self.data)
 
     def __getitem__(
         self, 
@@ -61,6 +62,42 @@ class OneClassClassificationDataset(Dataset):
             'input_text_ids' : input_text_ids.to(dtype=torch.long),
             'input_mask'     : input_mask.to(dtype=torch.long),
             'labels_y'       : labels_y.to(dtype=torch.long)
+        }
+
+class OneClassClassificationDataset_no_label(OneClassClassificationDataset):
+    def __init__(
+        self, 
+        dataframe, 
+        tokenizer, 
+        input_max_len,
+        labels_dict = {'true' : 0, '__label2__' : 1}, 
+    ):
+        self.tokenizer  = tokenizer 
+        self.data       = dataframe
+        self.input_text = self.data['text']
+        self.labels_dict = labels_dict
+        self.input_max_len = input_max_len
+    
+    def __getitem__(
+        self, 
+        index
+    ):
+        input_text = str(self.input_text[index])
+        myPreProcessor = PreProcessor()
+        input_text = myPreProcessor(input_text)
+        input_text = ' '.join(input_text.split())
+        input_text = self.tokenizer([input_text],
+                                    padding = 'max_length',
+                                    max_length=self.input_max_len,
+                                    truncation = True,
+                                    return_tensors="pt")
+
+        input_text_ids = input_text['input_ids'].squeeze()
+        input_mask     = input_text['attention_mask']
+     
+        return {
+            'input_text_ids' : input_text_ids.to(dtype=torch.long),
+            'input_mask'     : input_mask.to(dtype=torch.long)
         }
 
 class PostClassificationDataset(Dataset):
@@ -103,22 +140,30 @@ class PostClassificationDataset(Dataset):
         return self.labels
     
     def __len__(self):
-        return len(self.labels)
+        return len(self.data)
     
-    def _get_first_tag(
+    def _get_theme_id(
         self,
         input_tags,
     ):  
-        first_tag = input_tags.split(", ")[0]
-        return first_tag
-
+        input_tags = str(input_tags)
+        tags = input_tags.split(", ")
+        try :
+            theme_id = self.labels_dict[tags[0]]
+        except :
+            try : 
+                theme_id = self.labels_dict[tags[1]]
+            except :
+                theme_id = 20
+        return theme_id
 
     def __getitem__(
         self, 
         index
     ):
         input_text = str(self.input_text[index])
-        input_text = PreProcessor(input_text)
+        myPreProcessor = PreProcessor()
+        input_text = myPreProcessor(input_text)
         input_text = ' '.join(input_text.split())
         input_text = self.tokenizer([input_text],
                                     padding = 'max_length',
@@ -129,9 +174,7 @@ class PostClassificationDataset(Dataset):
         input_text_ids = input_text['input_ids'].squeeze()
         input_mask     = input_text['attention_mask']
         
-        labels_y       = labels[index]
-        labels_y       = self._get_first_tag(labels_y)
-        labels_y       = labels_dict[labels_y]
+        labels_y       = self._get_theme_id(self.labels[index])
         labels_y       = torch.tensor([labels_y])
         
         return {
@@ -139,6 +182,63 @@ class PostClassificationDataset(Dataset):
             'input_mask'     : input_mask.to(dtype=torch.long),
             'labels_y'       : labels_y.to(dtype=torch.long)
         }
+
+class PostClassificationDataset_no_label(PostClassificationDataset):
+    def __init__(
+        self, 
+        dataframe, 
+        tokenizer, 
+        input_max_len,
+        labels_dict = {'산'     : 0,
+                       '럭셔리' : 1,
+                       '역사'   : 2,
+                       '웰빙'   : 3,
+                       '바다'   : 4,
+                       '카페'   : 5,
+                       '공원'   : 6,
+                       '전시장' : 7,
+                       '건축'   : 8,
+                       '사찰'   : 9,
+                       '가족'   : 10,
+                       '학교'   : 11,
+                       '놀이공원':12,
+                       '겨울'   : 13,
+                       '엑티비티':14,
+                       '캠핑'   :15,
+                       '섬'     :16,
+                       '커플'   :17,
+                       '저수지' :18,
+                       '폭포'   :19
+                       }, 
+    ):
+        self.tokenizer  = tokenizer 
+        self.data       = dataframe
+        self.input_text = self.data['text']
+        self.labels_dict = labels_dict
+        self.input_max_len = input_max_len
+    
+    def __getitem__(
+        self, 
+        index
+    ):
+        input_text = str(self.input_text[index])
+        myPreProcessor = PreProcessor()
+        input_text = myPreProcessor(input_text)
+        input_text = ' '.join(input_text.split())
+        input_text = self.tokenizer([input_text],
+                                    padding = 'max_length',
+                                    max_length=self.input_max_len,
+                                    truncation = True,
+                                    return_tensors="pt")
+
+        input_text_ids = input_text['input_ids'].squeeze()
+        input_mask     = input_text['attention_mask']
+
+        return {
+            'input_text_ids' : input_text_ids.to(dtype=torch.long),
+            'input_mask'     : input_mask.to(dtype=torch.long),
+        }
+
 
 class DataExporter():
     """
@@ -148,36 +248,102 @@ class DataExporter():
     def __init__(
         self,
         dataframe,
-        tags,
         rest_api_key
     ):
         self.data = dataframe
-        self.latitude = self.data['latitude']
-        self.longitude= self.data['longitude']
-        self.tags = tags
         self.rest_api_key = rest_api_key
 
     def _get_address(
         self,
-        lat,
-        lng
-    ):
+        row
+    ):  
+        lat = str(row['latitude'])
+        lng = str(row['longitude'])
         url = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x="+lng+"&y="+lat
         headers = {"Authorization": "KakaoAK "+ self.rest_api_key}
         api_json = requests.get(url, headers=headers)
         full_address = json.loads(api_json.text)
 
-        return full_address
+        return full_address['documents'][0]['region_1depth_name'], full_address['documents'][0]['region_2depth_name']
 
-    def _get_items(
-        self,
-        index
+
+    def add_and_replace_column_with_address(
+        self
+    ):  
+        metroDict = {'metroName' : []}
+        localDict = {'localName' : []}
+        for _, row in self.data.iterrows():
+            try:
+                metroName, localName= self._get_address(row)
+            except:
+                print(row),
+                metroName = None
+                localName = None
+            metroDict['metroName'].append(metroName)
+            localDict['localName'].append(localName)
+        
+        self.data['metroName'] = pd.DataFrame(metroDict)
+        self.data['localName'] = pd.DataFrame(localDict)
+
+        return 
+
+    def split_address_to_meta_and_local(
+        self
     ):
-        lat = self.latitude[index]
-        lng = self.longitude[index]
-        address = self._get_address(lat,lng)
+        """
+        "address":{"0":{"meta":{"total_count":2},
+        "documents":
+            [{"region_type":"B",
+            "code":"4713012000",
+            "address_name":"경상북도 경주시 남산동"
+            ,"region_1depth_name":"경상북도",
+            "region_2depth_name":"경주시",
+            "region_3depth_name":"남산동",
+            "region_4depth_name":"",
+            "x":129.2406321303,"y":35.7909298509},{"region_type":"H","code":"4713060500","address_name":"경상북도 경주시 월성동","region_1depth_name":"경상북도","region_2depth_name":"경주시","region_3depth_name":"월성동","region_4depth_name":"","x":129.2196808723,"y":35.8365079286}]}
+        """
+        
+        self.data['metroName'] = self.data.apply(lambda x : x['address']['documents'][0]["region_1depth_name"], axis = 1)
+        self.data['localName'] = self.data.apply(lambda x : x['address']['documents'][0]["region_2depth_name"], axis = 1)
+        return
+
+    def add_theme_name_and_replace(
+        self
+    ):  
+        labelMap = ['산', '럭셔리', '역사', '웰빙', '바다','카페','공원','전시장','건축' ,'사찰','가족','학교','놀이공원','겨울','엑티비티','캠핑','섬','커플','저수지','폭포','ERR']
+       
+        self.data['themeName'] = self.data.apply(lambda x : labelMap[x['theme_id']], axis = 1)
 
         return
+
+    def _clean_datetime(
+        self,
+        row
+    ):
+        newdatetime = row["datetime"][:10]
+        return newdatetime
+
+    def clean_datetime_and_replace(self):
+        self.data['datetime'] = self.data.apply(lambda x : self._clean_datetime(x), axis = 1)
+
+    def get_weekly_hot_top_N(
+            self,
+            N = 10,
+        ):
+        ## from weekly collected sns post data
+        ## return top N hot places
+        
+        place_like_pairs = []
+        for place in self.data["place"].unique():
+            place_like_pairs({"place" : place,
+                              "likes" : self.data.loc[self.data['a'] == place, 'likes'].sum()})
+        
+        place_like_pairs = sorted(place_like_pairs, key = lambda place_like_pair : place_like_pair["likes"], reverse=True)
+
+        if len(place_like_pairs) >= N :
+            return place_like_pairs[:N-1]
+        else : 
+            return place_like_pairs
 
 
 def testOneClassClassificationDataset():
@@ -210,5 +376,42 @@ def testOneClassClassificationDataset():
         
         print(data['labels_y'])
 
+    assert False
 
+
+
+
+def testClassificationDataset():
+    dfdataset  = pd.read_excel('testingData/instagram_post.xlsx')
+    dftrainset = dfdataset.sample(frac=0.8,random_state=420)
+    dftestset  = dfdataset.drop(dftrainset.index)
+    dftrainset.reset_index(drop=True, inplace=True)
+    dftestset.reset_index(drop=True, inplace=True)
+    
+    tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
+    training_set = PostClassificationDataset(dftrainset, tokenizer, 512)
+    test_set     = PostClassificationDataset(dftestset , tokenizer, 512)
+    
+    train_params = {
+        'batch_size': 1,
+        'shuffle': True,
+        'num_workers': 0
+        }
+
+    val_params = {
+        'batch_size': 1,
+        'shuffle': False,
+        'num_workers': 0
+        }
+
+    train_loader = DataLoader(training_set, **train_params)
+    test_loader  = DataLoader(test_set, **val_params)
+    
+    for _, data in enumerate(train_loader, 0):
+        
+        print(data['labels_y'])
+
+    assert False
+
+def testExporter():
     assert False
