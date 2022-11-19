@@ -340,7 +340,7 @@ class DataExporter():
         
         place_like_pairs =  dict(sorted(place_like_pairs.items(), key=lambda item: item[1], reverse=True))
         top_place_list = list(place_like_pairs.keys())
-        print(top_place_list)
+        #print(top_place_list)
         if len(top_place_list) >= N :
             return top_place_list[:N]#dict(itertools.islice(place_like_pairs.items(), N))
         else : 
