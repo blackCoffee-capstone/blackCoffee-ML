@@ -106,7 +106,7 @@ def main():
     config = wandb.config           # Initialize config
     config.TRAIN_BATCH_SIZE = 32    # input batch size for training (default: 64)
     config.VALID_BATCH_SIZE = 1     # input batch size for testing (default: 1)
-    config.TRAIN_EPOCHS =  10       # number of epochs to train (default: 10)
+    config.TRAIN_EPOCHS =  50       # number of epochs to train (default: 10)
     config.VAL_EPOCHS = 1  
     config.LEARNING_RATE = 4.00e-05 # learning rate (default: 0.01)
     config.SEED = 420               # random seed (default: 42)

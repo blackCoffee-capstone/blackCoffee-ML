@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
 import requests
+import json
 import torch
 import pandas as pd
 from torch import nn
@@ -61,6 +62,42 @@ class OneClassClassificationDataset(Dataset):
             'input_text_ids' : input_text_ids.to(dtype=torch.long),
             'input_mask'     : input_mask.to(dtype=torch.long),
             'labels_y'       : labels_y.to(dtype=torch.long)
+        }
+
+class OneClassClassificationDataset_no_label(OneClassClassificationDataset):
+    def __init__(
+        self, 
+        dataframe, 
+        tokenizer, 
+        input_max_len,
+        labels_dict = {'true' : 0, '__label2__' : 1}, 
+    ):
+        self.tokenizer  = tokenizer 
+        self.data       = dataframe
+        self.input_text = self.data['text']
+        self.labels_dict = labels_dict
+        self.input_max_len = input_max_len
+    
+    def __getitem__(
+        self, 
+        index
+    ):
+        input_text = str(self.input_text[index])
+        myPreProcessor = PreProcessor()
+        input_text = myPreProcessor(input_text)
+        input_text = ' '.join(input_text.split())
+        input_text = self.tokenizer([input_text],
+                                    padding = 'max_length',
+                                    max_length=self.input_max_len,
+                                    truncation = True,
+                                    return_tensors="pt")
+
+        input_text_ids = input_text['input_ids'].squeeze()
+        input_mask     = input_text['attention_mask']
+     
+        return {
+            'input_text_ids' : input_text_ids.to(dtype=torch.long),
+            'input_mask'     : input_mask.to(dtype=torch.long)
         }
 
 class PostClassificationDataset(Dataset):
@@ -145,6 +182,63 @@ class PostClassificationDataset(Dataset):
             'input_mask'     : input_mask.to(dtype=torch.long),
             'labels_y'       : labels_y.to(dtype=torch.long)
         }
+
+class PostClassificationDataset_no_label(PostClassificationDataset):
+    def __init__(
+        self, 
+        dataframe, 
+        tokenizer, 
+        input_max_len,
+        labels_dict = {'산'     : 0,
+                       '럭셔리' : 1,
+                       '역사'   : 2,
+                       '웰빙'   : 3,
+                       '바다'   : 4,
+                       '카페'   : 5,
+                       '공원'   : 6,
+                       '전시장' : 7,
+                       '건축'   : 8,
+                       '사찰'   : 9,
+                       '가족'   : 10,
+                       '학교'   : 11,
+                       '놀이공원':12,
+                       '겨울'   : 13,
+                       '엑티비티':14,
+                       '캠핑'   :15,
+                       '섬'     :16,
+                       '커플'   :17,
+                       '저수지' :18,
+                       '폭포'   :19
+                       }, 
+    ):
+        self.tokenizer  = tokenizer 
+        self.data       = dataframe
+        self.input_text = self.data['text']
+        self.labels_dict = labels_dict
+        self.input_max_len = input_max_len
+    
+    def __getitem__(
+        self, 
+        index
+    ):
+        input_text = str(self.input_text[index])
+        myPreProcessor = PreProcessor()
+        input_text = myPreProcessor(input_text)
+        input_text = ' '.join(input_text.split())
+        input_text = self.tokenizer([input_text],
+                                    padding = 'max_length',
+                                    max_length=self.input_max_len,
+                                    truncation = True,
+                                    return_tensors="pt")
+
+        input_text_ids = input_text['input_ids'].squeeze()
+        input_mask     = input_text['attention_mask']
+
+        return {
+            'input_text_ids' : input_text_ids.to(dtype=torch.long),
+            'input_mask'     : input_mask.to(dtype=torch.long),
+        }
+
 
 class DataExporter():
     """
@@ -248,4 +342,7 @@ def testClassificationDataset():
         
         print(data['labels_y'])
 
+    assert False
+
+def testExporter():
     assert False

@@ -12,7 +12,7 @@ class KoBERTforSequenceClassification(nn.Module):
                  num_classes=8,
                  dr_rate=None,
                  params=None):
-        super(BERTClassifier, self).__init__()
+        super(KoBERTforSequenceClassification, self).__init__()
         self.bert = bert
         self.dr_rate = dr_rate
                  
