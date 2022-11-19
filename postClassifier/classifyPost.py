@@ -159,7 +159,7 @@ def main(input_file_path, output_file_path):
     myDataExpoerter.add_theme_name_and_replace()
     myDataExpoerter.add_and_replace_column_with_address()
     myDataExpoerter.clean_datetime_and_replace()
-    #myDataExpoerter.add_rank_and_replace()
+    myDataExpoerter.add_rank_and_replace()
     myDataExpoerter.data.rename(columns = {'place':'name','like':'likeNumber','text':'content'},inplace=True)
     myDataExpoerter.data = myDataExpoerter.data.drop(columns = ['is_trip','theme_id'])
     

@@ -9,7 +9,7 @@ from torch import optim
 from torch import cuda
 from torch.utils.data import DataLoader, Dataset
 from kobert_tokenizer import KoBERTTokenizer
-
+import itertools 
 from preprocessor import PreProcessor
 
 class OneClassClassificationDataset(Dataset):
@@ -326,24 +326,37 @@ class DataExporter():
     def clean_datetime_and_replace(self):
         self.data['datetime'] = self.data.apply(lambda x : self._clean_datetime(x), axis = 1)
 
-    def get_weekly_hot_top_N(
+    def _aget_weekly_hot_top_N(
             self,
             N = 10,
         ):
         ## from weekly collected sns post data
         ## return top N hot places
         
-        place_like_pairs = []
+        place_like_pairs = {}
         for place in self.data["place"].unique():
-            place_like_pairs({"place" : place,
-                              "likes" : self.data.loc[self.data['a'] == place, 'likes'].sum()})
+            print(type(self.data['like']))
+            place_like_pairs[place] = self.data.loc[self.data['place'] == place, 'like'].sum()
         
-        place_like_pairs = sorted(place_like_pairs, key = lambda place_like_pair : place_like_pair["likes"], reverse=True)
-
-        if len(place_like_pairs) >= N :
-            return place_like_pairs[:N-1]
+        place_like_pairs =  dict(sorted(place_like_pairs.items(), key=lambda item: item[1], reverse=True))
+        top_place_list = list(place_like_pairs.keys())
+        print(top_place_list)
+        if len(top_place_list) >= N :
+            return top_place_list[:N]#dict(itertools.islice(place_like_pairs.items(), N))
         else : 
-            return place_like_pairs
+            return top_place_list
+    
+    def _clean_like(self):
+        ## clean like value
+        ## if is type string fill 0
+        self.data['like'] = self.data.apply(lambda x : 0 if type(x['like']) is type("string") else x['like'], axis = 1)
+
+    def add_rank_and_replace(self):
+        self._clean_like()
+        top_20_places = self._aget_weekly_hot_top_N(20)
+        self.data['rank'] = self.data.apply(lambda x : top_20_places.index(x["place"]) if x["place"] in top_20_places else None, axis = 1)
+
+        return
 
 
 def testOneClassClassificationDataset():
