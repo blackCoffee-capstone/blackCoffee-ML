@@ -379,8 +379,6 @@ def testOneClassClassificationDataset():
     assert False
 
 
-
-
 def testClassificationDataset():
     dfdataset  = pd.read_excel('testingData/instagram_post.xlsx')
     dftrainset = dfdataset.sample(frac=0.8,random_state=420)

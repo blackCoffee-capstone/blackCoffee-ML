@@ -14,8 +14,10 @@ from kobert_tokenizer import KoBERTTokenizer
 """
 specify input xl file path, and output path
 """
+
 ood_path = './saved_model/occ_standard/'
 thm_path = './saved_model/thm_standard/'
+
 
 input_path = sys.argv[1]
 output_path = sys.argv[2]
@@ -26,7 +28,9 @@ epsilon = sys.float_info.epsilon
 
 def predict_with_no_gate(epoch, model, device, loader):
     model.eval()
+
     generated_labels = {"is_trip":[]}
+
 
     with torch.no_grad():
         for _, data in enumerate(loader, 0):
@@ -35,14 +39,17 @@ def predict_with_no_gate(epoch, model, device, loader):
             mask = data['input_mask'].to(device, dtype = torch.long)
 
             logits = model.forward(input_ids = ids, attention_mask = mask).logits
+
             predicted_class_id = torch.argmax(F.softmax(logits,dim=1), dim=1).cpu().item()
 
             generated_labels["is_trip"].extend([predicted_class_id])
+
         
     return generated_labels
 
 def predict_with_gate(epoch, model, device, loader, gater = None, gater_list = None):
     model.eval()
+
     generated_labels = {"theme_id":[]}
 
     with torch.no_grad():
@@ -54,6 +61,7 @@ def predict_with_gate(epoch, model, device, loader, gater = None, gater_list = N
             mask = data['input_mask'].to(device, dtype = torch.long)
 
             logits = model.forward(input_ids = ids, attention_mask = mask).logits
+
             predicted_class_id = torch.argmax(F.softmax(logits,dim=1), dim=1).cpu().item()
 
             generated_labels["theme_id"].extend([predicted_class_id])
@@ -127,6 +135,7 @@ def main(input_file_path, output_file_path):
                                                           output_attentions=False,
                                                           output_hidden_states=False)
     thm_model.to(device)
+
     def is_trip_gater(is_a_trip_label):
         if is_a_trip_label == 0:
             return True
@@ -136,6 +145,7 @@ def main(input_file_path, output_file_path):
     """
     Extract tag information from post
     """
+
     for epoch in range(config.VAL_EPOCHS):
         generated_theme_label = predict_with_no_gate(epoch, thm_model, device, thm_loader)
 
@@ -152,6 +162,8 @@ def main(input_file_path, output_file_path):
     myDataExpoerter.data = myDataExpoerter.data.drop(columns = ['is_trip','theme_id'])
     myDataExpoerter.data.to_json(output_file_path, force_ascii= False, orient='index')
     print(myDataExpoerter.data)
+
+
     
 if __name__ == '__main__':
     main(input_path, output_path)
