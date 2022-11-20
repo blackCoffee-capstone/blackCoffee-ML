@@ -6,8 +6,9 @@ from utils import RecommendationDataset
 
 input_path = sys.argv[1]
 output_path = sys.argv[2]
+target_id = sys.argv[3]
 
-def main(input_file_path, output_file_path):
+def main(input_file_path, output_file_path, target_id):
     ## Load Data from Json
     myRecommendationDataset = RecommendationDataset()
     myRecommendationDataset.load_data_from_json(input_file_path)
@@ -38,7 +39,7 @@ def main(input_file_path, output_file_path):
         empty_user_item_matrix,
         weighted_user_item_matrix= empty_user_item_matrix
     )
-    taraget_user_id = 1
+    target_id
 
     recommender.gen_weight()
     #print(recommender.weighted_user_item_matrix)
@@ -51,10 +52,10 @@ def main(input_file_path, output_file_path):
     
     ## Run Recommendatoin,
     ## From Recommended item_ids generate list of spots (containing spot informations)
-    for loc, recommendations in recommender.recommend_by_loc(taraget_user_id).items():
+    for loc, recommendations in recommender.recommend_by_loc(target_id).items():
         dict_recommendations["locationRecommendation"][loc] = myRecommendationDataset.from_npArray_get_spot(recommendations[0])
     
-    for theme, recommendations in recommender.recommend_by_theme(taraget_user_id).items():
+    for theme, recommendations in recommender.recommend_by_theme(target_id).items():
         dict_recommendations["themeRecommendation"][theme] = myRecommendationDataset.from_npArray_get_spot(recommendations[0])
 
     print(dict_recommendations)
@@ -66,4 +67,4 @@ def main(input_file_path, output_file_path):
 
 
 if __name__ == '__main__':
-    main(input_path, output_path)
+    main(input_path, output_path, target_id)
