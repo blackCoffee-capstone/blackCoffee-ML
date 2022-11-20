@@ -43,7 +43,8 @@ def main(input_file_path, output_file_path, target_id):
     dict_recommendations = {
         "locationRecommendation" : {},
         "themeRecommendation" : {},
-        "listRecommendation" : []
+        "listRecommendation" : [],
+        "mapRecommendation" : []
     }
 
     ## Run Recommendatoin,
@@ -63,7 +64,12 @@ def main(input_file_path, output_file_path, target_id):
         if location_name == 'Uknown' :
             continue
         
-        dict_recommendations["locationRecommendation"][location_name] = myRecommendationDataset.from_npArray_get_spot_id(recommendations[0])
+        spot_ids = myRecommendationDataset.from_npArray_get_spot_id(recommendations[0])
+        dict_recommendations["locationRecommendation"][location_name] = spot_ids
+        
+        if spot_ids[0] not in dict_recommendations["mapRecommendation"]:
+            dict_recommendations["mapRecommendation"].append(spot_ids[0])
+        
     
     for theme, recommendations in recommender.recommend_by_theme(mapped_target_id, reocmmendation_num_per_criteria).items():
         
