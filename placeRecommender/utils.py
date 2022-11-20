@@ -16,11 +16,11 @@ class Item():
 class RecommendationDataset():
     def __init__(
         self,
-        user_taste_dict,
-        spot_dict,
-        spot_map,
-        spotNum,
-        userNum,
+        user_taste_dict = None,
+        spot_dict = None,
+        spot_map = None,
+        spotNum = None,
+        userNum = None,
         theme_dict = {'산'     : 0,
                        '럭셔리' : 1,
                        '역사'   : 2,
@@ -74,19 +74,22 @@ class RecommendationDataset():
         self,
         path
     ):
-        list_of_dfTable = []
         ## Load Data from Json
         with open(path, 'r', encoding="UTF-8") as file:
             data = json.load(file)
     
         self.user_taste = data['usersTastes']
         self.spots = data['spots']
+
+        self.userNum = len(self.user_taste)
+        self.spotNum = len(self.spots)
         return
 
     def _make_spot_map(self):
         spotMap = {}
+        
         for spot in self.spots:
-            spotMap[spot['RecommendationsSpotResponseDto']['id']]=spot
+            spotMap[spot['RecommendationsSpotResponseDto']['id']]=spot['RecommendationsSpotResponseDto']
         self.spotMap = spotMap
         self.spotNum = len(spotMap)
 
@@ -95,7 +98,8 @@ class RecommendationDataset():
         path,
     ):  
         self._load_tables_from_json_file(path)
-        self._make_spot_map
+        self._make_spot_map()
+
         return
 
     def _process_data(
@@ -110,9 +114,9 @@ class RecommendationDataset():
 
     def get_spot_theme_matrix(self):
         spot_theme_matrix = []
-        for spot in self.spotMap:
+        for id, spot in self.spotMap.items():
             theme_list = [0] * len(self.theme_dict)
-            for theme in spot['RecommendationsSpotResponseDto']['themes']:
+            for theme in spot['themes']:
                 theme_id = self.theme_dict[theme]
                 theme_list[theme_id] = 1
             spot_theme_matrix.append(theme_list)
@@ -121,10 +125,10 @@ class RecommendationDataset():
 
     def get_spot_loc_matrix(self):
         spot_loc_matrix = []
-        for spot in self.spotMap:
+        for id, spot in self.spotMap.items():
             loc_list = [0] * len(self.loc_dict)
             try:
-                loc_id = self.loc_dict(spot['RecommendationsSpotResponseDto']['metroName'])
+                loc_id = self.loc_dict(spot['metroName'])
             except:
                 loc_id = 16
             loc_list[loc_id] = 1
@@ -134,7 +138,7 @@ class RecommendationDataset():
 
     def get_user_theme_matrix(self):
         user_theme_matrix = []
-        for user in self.spotMap:
+        for user in self.user_taste:
             theme_list = [0] * len(self.theme_dict)
             for theme in user['UsersTasteThemesResponseDto']['themes']:
                 theme_id = self.theme_dict[theme]
@@ -149,9 +153,10 @@ class RecommendationDataset():
         ndArray
     ):
         new_list = []
-        item_ids = list(ndArray)
+        item_ids = ndArray.tolist()
+        
         for item_id in item_ids:
-            new_list.append(self.spot_map[item_id])
+            new_list.append(self.spotMap[item_id])
         return new_list
 
 
