@@ -38,7 +38,8 @@ class PlaceRecommender():
                        '섬'     :16,
                        '커플'   :17,
                        '저수지' :18,
-                       '폭포'   :19
+                       '폭포'   :19,
+                       'Uknown' :20
                        }, 
         dict_loc = {'서울':0,
                     '부산':1,
@@ -98,9 +99,18 @@ class PlaceRecommender():
         N,
         candidate_spot_mask
     ):
-        item_weights = np.multiply(self.weighted_user_item_matrix[user_id], candidate_spot_mask)
+        if candidate_spot_mask is None:
+            item_weights = self.weighted_user_item_matrix[user_id]
+        else :
+            item_weights = np.multiply(self.weighted_user_item_matrix[user_id], candidate_spot_mask)
+        
         recommending_ranks = item_weights.argsort().argsort()
-        return np.where(recommending_ranks > self.num_spot - N)
+        print(recommending_ranks)
+        print(np.where(recommending_ranks > self.num_spot - N - 1))
+        ##TODO
+        ## WE are only giving back the top N elements not ordered top N elements
+
+        return np.where(recommending_ranks > self.num_spot - N - 1)
 
     def _get_location_related_spot_mask(
         self,
@@ -118,7 +128,9 @@ class PlaceRecommender():
         per_loc_recommendations = {}
         for _, loc in self.dict_loc.items():
             candidate_spot_mask = self._get_location_related_spot_mask(loc)
+            #print(candidate_spot_mask)
             per_loc_recommendations[loc] = self._find_top_N_item(user_id, per_loc, candidate_spot_mask)
+            #print(per_loc_recommendations[loc])
 
         return per_loc_recommendations
 
@@ -138,9 +150,18 @@ class PlaceRecommender():
         per_theme_recommendations = {}
         for _, theme in self.dict_theme.items():
             candidate_spot_mask = self._get_theme_related_spots_mask(theme)
+            #print(candidate_spot_mask)
             per_theme_recommendations[theme] = self._find_top_N_item(user_id, per_theme, candidate_spot_mask)
+            #print(per_theme_recommendations[theme])
 
         return per_theme_recommendations
+
+    def recommend(
+        self,
+        user_id,
+        topN = 10
+    ) :
+        return self._find_top_N_item(user_id, topN, None)
 
 import numpy as np
 
