@@ -30,7 +30,8 @@ def main(input_file_path, output_file_path, target_id):
         empty_user_item_matrix,
         weighted_user_item_matrix= empty_user_item_matrix
     )
-    target_id
+    
+    mapped_target_id = myRecommendationDataset.get_user_id(target_id)
 
     recommender.gen_weight()
     print(recommender.weighted_user_item_matrix)
@@ -45,10 +46,10 @@ def main(input_file_path, output_file_path, target_id):
 
     ## Run Recommendatoin,
     ## From Recommended item_ids generate list of spots (containing spot informations)
-    for loc, recommendations in recommender.recommend_by_loc(target_id).items():
+    for loc, recommendations in recommender.recommend_by_loc(mapped_target_id).items():
         dict_recommendations["locationRecommendation"][loc] = myRecommendationDataset.from_npArray_get_spot(recommendations[0])
     
-    for theme, recommendations in recommender.recommend_by_theme(target_id).items():
+    for theme, recommendations in recommender.recommend_by_theme(mapped_target_id).items():
         dict_recommendations["themeRecommendation"][theme] = myRecommendationDataset.from_npArray_get_spot(recommendations[0])
 
     print(dict_recommendations)

@@ -157,8 +157,11 @@ def main(input_file_path, output_file_path):
     myDataExpoerter.add_theme_name_and_replace()
     myDataExpoerter.add_and_replace_column_with_address()
     myDataExpoerter.clean_datetime_and_replace()
+    myDataExpoerter.convert_metro_and_local_name()
+    myDataExpoerter.data = myDataExpoerter.data[myDataExpoerter.data.metroName != None]
+
     myDataExpoerter.add_rank_and_replace()
-    myDataExpoerter.data.rename(columns = {'place':'name','like':'likeNumber','text':'content'},inplace=True)
+    myDataExpoerter.data.rename(columns = {'place':'name','like':'likeNumber','text':'content','link':'photoUrl','datetime':'date'},inplace=True)
     myDataExpoerter.data = myDataExpoerter.data.drop(columns = ['is_trip','theme_id'])
     
     data_dict = myDataExpoerter.data.to_dict('index')
@@ -166,7 +169,10 @@ def main(input_file_path, output_file_path):
     #print(data_list[0])
     #myDataExpoerter.data.to_json(output_file_path, force_ascii= False, orient='index')
     with open(output_file_path, "w", encoding='utf8') as json_file:
-        json_file.write(json.dumps(data_list, ensure_ascii=False).replace('NaN','null'))
+        result_as_json = json.dumps(data_list, ensure_ascii=False)
+        result_as_json = result_as_json.replace('NaN','null')
+        result_as_json = result_as_json.replace('None','null')
+        json_file.write(result_as_json)
 
 
     print(myDataExpoerter.data)

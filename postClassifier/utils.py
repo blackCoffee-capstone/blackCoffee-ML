@@ -302,7 +302,7 @@ class DataExporter():
             "region_4depth_name":"",
             "x":129.2406321303,"y":35.7909298509},{"region_type":"H","code":"4713060500","address_name":"경상북도 경주시 월성동","region_1depth_name":"경상북도","region_2depth_name":"경주시","region_3depth_name":"월성동","region_4depth_name":"","x":129.2196808723,"y":35.8365079286}]}
         """
-        
+
         self.data['metroName'] = self.data.apply(lambda x : x['address']['documents'][0]["region_1depth_name"], axis = 1)
         self.data['localName'] = self.data.apply(lambda x : x['address']['documents'][0]["region_2depth_name"], axis = 1)
         return
@@ -335,12 +335,10 @@ class DataExporter():
         
         place_like_pairs = {}
         for place in self.data["place"].unique():
-            print(type(self.data['like']))
             place_like_pairs[place] = self.data.loc[self.data['place'] == place, 'like'].sum()
         
         place_like_pairs =  dict(sorted(place_like_pairs.items(), key=lambda item: item[1], reverse=True))
         top_place_list = list(place_like_pairs.keys())
-        #print(top_place_list)
         if len(top_place_list) >= N :
             return top_place_list[:N]#dict(itertools.islice(place_like_pairs.items(), N))
         else : 
@@ -357,6 +355,45 @@ class DataExporter():
         self.data['rank'] = self.data.apply(lambda x : top_20_places.index(x["place"]) if x["place"] in top_20_places else None, axis = 1)
 
         return
+
+    def convert_metro_and_local_name(self):
+        metroMap = {"서울특별시" : "서울",
+                    "인천광역시" : "인천",
+                    "부산광역시" : "부산",
+                    "대구광역시" : "대구",
+                    "대전광역시" : "대전",
+                    "광주광역시" : "광주",
+                    "울산광역시" : "울산",
+                    "세종특별자치시" : "세종", 
+                    "제주특별자치도" : "제주",
+                    "경기도" : "경기도",
+                    "강원도" : "강원도",
+                    "충청북도" : "충청도",
+                    "충청남도" : "충청도",
+                    "전라북도" : "전라도",
+                    "전라남도" : "전라도",
+                    "경상북도" : "경상도",
+                    "경상남도" : "경상도"
+                    }
+
+        localNullMetro = {"서울특별시" : "서울",
+                          "인천광역시" : "인천",
+                          "부산광역시" : "부산",
+                         "대구광역시" : "대구",
+                    "대전광역시" : "대전",
+                    "광주광역시" : "광주",
+                    "울산광역시" : "울산",
+                    "세종특별자치시" : "세종", 
+                    "제주특별자치도" : "제주"}
+
+        def is_in_metro(input_metro_name):
+            if input_metro_name in metroMap:
+                return metroMap[input_metro_name]
+            else: return None
+
+        self.data['localName'] = self.data.apply(lambda x : None if x["metroName"] in localNullMetro else x["localName"], axis = 1)
+        self.data['metroName'] = self.data.apply(lambda x : is_in_metro(x['metroName']), axis = 1)
+        
 
 
 def testOneClassClassificationDataset():

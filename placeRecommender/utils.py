@@ -43,23 +43,21 @@ class RecommendationDataset():
                        '저수지' :18,
                        '폭포'   :19
                        }, 
-        loc_dict = {'서울특별시':0,
-                    '부산광역시':1,
-                    '대구광역시':2,
-                    '인천광역시':3,
-                    '광주광역시':4,
-                    '대전광역시':5,
-                    '울산광역시':6,
-                    '세종특별자치시':7,
+        loc_dict = {'서울':0,
+                    '부산':1,
+                    '대구':2,
+                    '인천':3,
+                    '광주':4,
+                    '대전':5,
+                    '울산':6,
+                    '세종':7,
                     '경기도':8,
                     '강원도':9,
-                    '충청북도':10,
-                    '전라북도':11,
-                    '전라남도':12,
-                    '경상북도':13,
-                    '경상남도':14,
-                    '제주특별자치도':15,
-                    'Uknown':16
+                    '충청도':10,
+                    '전라도':11,
+                    '경상도':12,
+                    '제주':13,
+                    'Uknown':14
         }
     ):
         self.user_taste = user_taste_dict
@@ -105,6 +103,16 @@ class RecommendationDataset():
         self.userMap = userMap
         self.userNum = len(userMap)
 
+    def get_user_id(
+        self,
+        input_user_id
+    ):
+        for user_id, original_user in self.userMap.items():
+            if original_user['user_id'] == input_user_id:
+                return user_id
+        
+        return 0
+
     def load_data_from_json(
         self,
         path,
@@ -140,10 +148,11 @@ class RecommendationDataset():
         spot_loc_matrix = []
         for id, spot in self.spotMap.items():
             loc_list = [0] * len(self.loc_dict)
-            try:
-                loc_id = self.loc_dict(spot['metroName'])
-            except:
-                loc_id = 16
+            if spot['metroName'] in self.loc_dict:
+                loc_id = self.loc_dict[spot['metroName']]
+            else:
+                loc_id = self.loc_dict['Uknown']
+
             loc_list[loc_id] = 1
             spot_loc_matrix.append(loc_list)
             
