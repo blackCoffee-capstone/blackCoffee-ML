@@ -4,7 +4,7 @@ from torch import cuda
 import pandas as pd
 import json
 import sys
-import wandb
+import os
 from datetime import datetime
 from transformers import BertModel, BertForSequenceClassification
 from torch.utils.data import DataLoader
@@ -92,18 +92,16 @@ def df_load_from_path(input_file_path):
         AssertionError("File Format Uknown")
 
 def main(input_file_path, output_file_path):
-    wandb.init(project="Post Classification Final")
     
-    config = wandb.config           # Initialize config
-    config.TRAIN_BATCH_SIZE = 32    # input batch size for training (default: 64)
-    config.VALID_BATCH_SIZE = 1     # input batch size for testing (default: 1)
-    config.TRAIN_EPOCHS =  50       # number of epochs to train (default: 10)
-    config.VAL_EPOCHS = 1  
-    config.LEARNING_RATE = 4.00e-05 # learning rate (default: 0.01)
-    config.SEED = 420               # random seed (default: 42)
-    config.MAX_LEN = 512
+    
+    file_exists = os.path.exists(input_file_path)
+    if not file_exists:
+        AssertionError("No input File Found for Classification require path to csv, xlxs")
+
+    SEED = 420               # random seed (default: 42)
+    MAX_LEN = 512
     val_params = {
-        'batch_size': config.VALID_BATCH_SIZE,
+        'batch_size': 1,
         'shuffle': False,
         'num_workers': 0
         }
@@ -111,24 +109,24 @@ def main(input_file_path, output_file_path):
     torch.backends.cudnn.deterministic = True
     tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
     dfdataset = df_load_from_path(input_file_path)
-    ooddataset = OneClassClassificationDataset_no_label(dfdataset, tokenizer, config.MAX_LEN)
+    ooddataset = OneClassClassificationDataset_no_label(dfdataset, tokenizer, MAX_LEN)
    
     ood_loader = DataLoader(ooddataset, **val_params)
-    
+    print(dfdataset.head(10))
 
     ood_model = BertForSequenceClassification.from_pretrained(ood_path)
     ood_model.to(device)
     """
     First determine if the post is travel related or not
     """
-    for epoch in range(config.VAL_EPOCHS):
+    for epoch in range(1):
         generated_is_trip_label = predict_with_no_gate(epoch, ood_model, device, ood_loader)
 
     dfdataset['is_trip'] = pd.DataFrame.from_dict(generated_is_trip_label)
     dfthmdataset = dfdataset[dfdataset.is_trip != 1]
     dfthmdataset.reset_index(drop=True, inplace=True)
 
-    thmdataset = PostClassificationDataset_no_label(dfthmdataset, tokenizer, config.MAX_LEN)
+    thmdataset = PostClassificationDataset_no_label(dfthmdataset, tokenizer, MAX_LEN)
     thm_loader = DataLoader(thmdataset, **val_params)
 
     thm_model = BertForSequenceClassification.from_pretrained(thm_path,
@@ -147,7 +145,7 @@ def main(input_file_path, output_file_path):
     Extract tag information from post
     """
 
-    for epoch in range(config.VAL_EPOCHS):
+    for epoch in range(1):
         generated_theme_label = predict_with_no_gate(epoch, thm_model, device, thm_loader)
 
     dfthmdataset["theme_id"] = pd.DataFrame.from_dict(generated_theme_label)
@@ -168,7 +166,7 @@ def main(input_file_path, output_file_path):
     #print(data_list[0])
     #myDataExpoerter.data.to_json(output_file_path, force_ascii= False, orient='index')
     with open(output_file_path, "w", encoding='utf8') as json_file:
-        json_file.write(json.dumps(data_list, ensure_ascii=False))
+        json_file.write(json.dumps(data_list, ensure_ascii=False).replace('NaN','null'))
 
 
     print(myDataExpoerter.data)
