@@ -6,7 +6,7 @@ from utils import RecommendationDataset
 
 input_path = sys.argv[1]
 output_path = sys.argv[2]
-target_id = sys.argv[3]
+target_id = int(sys.argv[3])
 
 def main(input_file_path, output_file_path, target_id):
     ## Load Data from Json
@@ -21,15 +21,6 @@ def main(input_file_path, output_file_path, target_id):
     user_theme_matrix = np.array(myRecommendationDataset.get_user_theme_matrix(), dtype=float)
     empty_user_item_matrix = np.zeros([userNum,spotNum],dtype=float)
 
-    #print(userNum,spotNum)
-    #print(location_spot_matrix.shape)
-    #print(myRecommendationDataset.user_taste)
-    #print(myRecommendationDataset.spots[0]['RecommendationsSpotResponseDto']['themes'])
-    #print(type(myRecommendationDataset.spots))
-    #print(theme_spot_matrix.shape)
-    #print(user_theme_matrix.shape)
-    #print(empty_user_item_matrix.shape)
-
     recommender = PlaceRecommender(
         userNum,
         spotNum,
@@ -42,7 +33,7 @@ def main(input_file_path, output_file_path, target_id):
     target_id
 
     recommender.gen_weight()
-    #print(recommender.weighted_user_item_matrix)
+    print(recommender.weighted_user_item_matrix)
     #print(recommender.location_item_matrix)
     ## Create Recommender
     dict_recommendations = {
@@ -50,6 +41,8 @@ def main(input_file_path, output_file_path, target_id):
         "themeRecommendation" : {}
     }
     
+
+
     ## Run Recommendatoin,
     ## From Recommended item_ids generate list of spots (containing spot informations)
     for loc, recommendations in recommender.recommend_by_loc(target_id).items():

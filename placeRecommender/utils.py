@@ -18,6 +18,7 @@ class RecommendationDataset():
         self,
         user_taste_dict = None,
         spot_dict = None,
+        user_map = None,
         spot_map = None,
         spotNum = None,
         userNum = None,
@@ -63,6 +64,7 @@ class RecommendationDataset():
     ):
         self.user_taste = user_taste_dict
         self.spots = spot_dict
+        self.userMap = user_map
         self.spotMap = spot_map
         self.spotNum = spotNum
         self.userNum = userNum
@@ -87,11 +89,21 @@ class RecommendationDataset():
 
     def _make_spot_map(self):
         spotMap = {}
-        
+        n = 0
         for spot in self.spots:
-            spotMap[spot['RecommendationsSpotResponseDto']['id']]=spot['RecommendationsSpotResponseDto']
+            spotMap[n]=spot['RecommendationsSpotResponseDto']
+            n = n + 1 
         self.spotMap = spotMap
         self.spotNum = len(spotMap)
+    
+    def _make_user_map(self):
+        userMap = {}
+        n = 0
+        for user in self.user_taste:
+            userMap[n]=user['UsersTasteThemesResponseDto']
+            n = n + 1 
+        self.userMap = userMap
+        self.userNum = len(userMap)
 
     def load_data_from_json(
         self,
@@ -99,6 +111,7 @@ class RecommendationDataset():
     ):  
         self._load_tables_from_json_file(path)
         self._make_spot_map()
+        self._make_user_map()
 
         return
 
@@ -138,9 +151,9 @@ class RecommendationDataset():
 
     def get_user_theme_matrix(self):
         user_theme_matrix = []
-        for user in self.user_taste:
+        for id, user in self.userMap.items():
             theme_list = [0] * len(self.theme_dict)
-            for theme in user['UsersTasteThemesResponseDto']['themes']:
+            for theme in user['themes']:
                 theme_id = self.theme_dict[theme]
                 theme_list[theme_id] = 1
             user_theme_matrix.append(theme_list)
