@@ -11,10 +11,10 @@ import torch.nn.functional as F
 from kobert_tokenizer import KoBERTTokenizer
 
 from model import KoBERTforSequenceClassification
-from utils import PostClassificationDataset
+from utils import OneClassClassificationDataset
 
-save_path = './saved_model/thm_' + datetime.now().strftime("%y%m%d_%H%M%S")
-saved_path  = './saved_model/thm_'
+save_path = './saved_model_/occ' + datetime.strftime("%Y%m%d_%H%M%S")
+saved_path  = './saved_model_/occ'
 
 device = 'cuda' if cuda.is_available() else 'cpu'
 print(device)
@@ -101,12 +101,12 @@ def validate(epoch, tokenizer, model, device, loader):
     return precision, recall, f1, acc
     
 def main():
-    wandb.init(project="Post Theme")
+    wandb.init(project="Post OOD")
     
     config = wandb.config           # Initialize config
     config.TRAIN_BATCH_SIZE = 32    # input batch size for training (default: 64)
     config.VALID_BATCH_SIZE = 1     # input batch size for testing (default: 1)
-    config.TRAIN_EPOCHS =  50       # number of epochs to train (default: 10)
+    config.TRAIN_EPOCHS =  10       # number of epochs to train (default: 10)
     config.VAL_EPOCHS = 1  
     config.LEARNING_RATE = 4.00e-05 # learning rate (default: 0.01)
     config.SEED = 420               # random seed (default: 42)
@@ -133,8 +133,8 @@ def main():
     dftestset.reset_index(drop=True, inplace=True)
     
     tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
-    training_set = PostClassificationDataset(dftrainset, tokenizer, config.MAX_LEN)
-    test_set     = PostClassificationDataset(dftestset , tokenizer, config.MAX_LEN)
+    training_set = OneClassClassificationDataset(dftrainset, tokenizer, config.MAX_LEN)
+    test_set     = OneClassClassificationDataset(dftestset , tokenizer, config.MAX_LEN)
     
     train_loader = DataLoader(training_set, **train_params)
     test_loader  = DataLoader(test_set, **val_params)
@@ -142,10 +142,7 @@ def main():
     print(dftrainset.sample(10))
     print("TRAIN Dataset: {}".format(dftrainset.shape))
     
-    model = BertForSequenceClassification.from_pretrained('skt/kobert-base-v1',
-                                                          num_labels = 21,
-                                                          output_attentions=False,
-                                                          output_hidden_states=False)
+    model = BertForSequenceClassification.from_pretrained('skt/kobert-base-v1')
     model.to(device)
     optimizer = torch.optim.Adam(params =  model.parameters(), lr=config.LEARNING_RATE)   
     

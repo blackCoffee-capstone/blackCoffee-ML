@@ -1,0 +1,57 @@
+{
+    "usersTastes": [
+        {"UsersTasteThemesResponseDto" : {
+            "user_id": 1,
+            "themes" : ["산", "역사"]
+            }
+        },
+        {"UsersTasteThemesResponseDto" : {
+            "user_id": 2,
+            "themes" : ["럭셔리", "역사"]
+            }
+        },
+        {"UsersTasteThemesResponseDto" : {
+            "user_id": 3,
+            "themes" : ["산", "역사"]
+            }
+        },
+        {"UsersTasteThemesResponseDto" : {
+            "user_id": 4,
+            "themes" : ["엑티비티", "바다"]
+            }
+        },
+        {"UsersTasteThemesResponseDto" : {
+            "user_id": 5,
+            "themes" : ["산", "역사"]
+            }
+        }
+    ],
+    "spots": [
+        {"RecommendationsSpotResponseDto" : {
+            "id": 0,
+            "name": "test1",
+            "latitude": "37.253452",
+            "longitude": "126.234523",
+            "rank": 1,
+            "snsPostCount": 50,
+            "snsPostLikeNumber": 100,
+            "metroName": "서울",
+            "localName": null,
+            "themes": ["역사"]
+            }
+        },
+        {"RecommendationsSpotResponseDto" : {
+            "id" : 1,
+            "name": "test2",
+            "latitude": "37.253452",
+            "longitude": "126.234523",
+            "rank": 2,
+            "snsPostCount": 50,
+            "snsPostLikeNumber": 100,
+            "metroName": "서울",
+            "localName": null,
+            "themes": ["역사","웰빙"]
+            }
+        }
+    ]
+}
