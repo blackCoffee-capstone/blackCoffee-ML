@@ -1,0 +1,12 @@
+/postClassifier/__pycache__
+/postClassifier/wandb
+/postClassifier/.pytest_cache
+/postClassifier/*.pyc
+/postClassifier/*.json
+/postClassifier/*.xlsx
+/postClassifier/*.csv
+/postClassifier/*.log
+/postClassifier/testingData/*.json
+/postClassifier/testingData/*.xlsx
+/postClassifier/testingData/*.csv
+/postClassifier/testingData/*.log
