@@ -112,6 +112,8 @@ def main(input_file_path, output_file_path):
     ooddataset = OneClassClassificationDataset_no_label(dfdataset, tokenizer, MAX_LEN)
    
     ood_loader = DataLoader(ooddataset, **val_params)
+    
+    print(len(dfdataset))
     print(dfdataset.head(10))
 
     ood_model = BertForSequenceClassification.from_pretrained(ood_path)
@@ -156,12 +158,14 @@ def main(input_file_path, output_file_path):
     myDataExpoerter = DataExporter(dfthmdataset, "3def73060f55c3515922f19109dc469e")
     myDataExpoerter.add_theme_name_and_replace()
     myDataExpoerter.add_and_replace_column_with_address()
+    myDataExpoerter.add_metro_local_address()
     myDataExpoerter.clean_datetime_and_replace()
-    myDataExpoerter.convert_metro_and_local_name()
+    #myDataExpoerter.convert_metro_and_local_name()
     myDataExpoerter.data = myDataExpoerter.data[myDataExpoerter.data.metroName != None]
 
     myDataExpoerter.add_rank_and_replace()
-    myDataExpoerter.data.rename(columns = {'place':'name','like':'likeNumber','text':'content','link':'photoUrl','datetime':'date'},inplace=True)
+    print(myDataExpoerter.data)
+    myDataExpoerter.data.rename(columns = {'place':'name','like':'likeNumber','text':'content', 'link':'photoUrl', 'datetime':'date'},inplace=True)
     myDataExpoerter.data = myDataExpoerter.data.drop(columns = ['is_trip','theme_id'])
     
     data_dict = myDataExpoerter.data.to_dict('index')

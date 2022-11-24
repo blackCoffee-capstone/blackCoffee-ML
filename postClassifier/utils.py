@@ -1,5 +1,5 @@
 #-*- coding: utf-8 -*-
-
+import re
 import requests
 import json
 import torch
@@ -257,39 +257,6 @@ class DataExporter():
         self,
         row
     ):  
-        lat = str(row['latitude'])
-        lng = str(row['longitude'])
-        url = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x="+lng+"&y="+lat
-        headers = {"Authorization": "KakaoAK "+ self.rest_api_key}
-        api_json = requests.get(url, headers=headers)
-        full_address = json.loads(api_json.text)
-
-        return full_address['documents'][0]['region_1depth_name'], full_address['documents'][0]['region_2depth_name']
-
-
-    def add_and_replace_column_with_address(
-        self
-    ):  
-        metroDict = {'metroName' : []}
-        localDict = {'localName' : []}
-        for _, row in self.data.iterrows():
-            try:
-                metroName, localName= self._get_address(row)
-            except:
-                print(row),
-                metroName = None
-                localName = None
-            metroDict['metroName'].append(metroName)
-            localDict['localName'].append(localName)
-        
-        self.data['metroName'] = pd.DataFrame(metroDict)
-        self.data['localName'] = pd.DataFrame(localDict)
-
-        return 
-
-    def split_address_to_meta_and_local(
-        self
-    ):
         """
         "address":{"0":{"meta":{"total_count":2},
         "documents":
@@ -302,10 +269,34 @@ class DataExporter():
             "region_4depth_name":"",
             "x":129.2406321303,"y":35.7909298509},{"region_type":"H","code":"4713060500","address_name":"경상북도 경주시 월성동","region_1depth_name":"경상북도","region_2depth_name":"경주시","region_3depth_name":"월성동","region_4depth_name":"","x":129.2196808723,"y":35.8365079286}]}
         """
+        
+        lat = str(row['latitude'])
+        lng = str(row['longitude'])
+        url = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x="+lng+"&y="+lat
+        headers = {"Authorization": "KakaoAK "+ self.rest_api_key}
+        api_json = requests.get(url, headers=headers)
+        full_address = json.loads(api_json.text)
 
-        self.data['metroName'] = self.data.apply(lambda x : x['address']['documents'][0]["region_1depth_name"], axis = 1)
-        self.data['localName'] = self.data.apply(lambda x : x['address']['documents'][0]["region_2depth_name"], axis = 1)
-        return
+        return full_address['documents'][0]['region_1depth_name'], full_address['documents'][0]['region_2depth_name'], full_address['documents'][0]["address_name"]
+
+
+    def _get_pandas_series_address(
+        self,
+        row
+    ):
+        try :
+            metroName, localName, address = self._get_address(row)
+        except :
+            metroName, localName, address = None, None, None
+        
+        return pd.Series([metroName, localName, address])
+
+
+    def add_metro_local_address(self):
+        data = self.data 
+        data[["metroName","localName","address"]]= data.apply(lambda x : self._get_pandas_series_address(x),axis=1)
+        self.data = data
+
 
     def add_theme_name_and_replace(
         self
@@ -315,6 +306,7 @@ class DataExporter():
         self.data['themeName'] = self.data.apply(lambda x : labelMap[x['theme_id']], axis = 1)
 
         return
+
 
     def _clean_datetime(
         self,
@@ -347,14 +339,23 @@ class DataExporter():
     def _clean_like(self):
         ## clean like value
         ## if is type string fill 0
+        def removeComma(text):
+            text = re.sub( ",", "",text)
+            return text
+
+        self.data['like'] = self.data.apply(lambda x : str(x['like']), axis = 1)
+        self.data['like'] = self.data.apply(lambda x : removeComma(x['like']) if type(x['like']) is type("string") else x['like'], axis = 1)
+        self.data['like'] = self.data.apply(lambda x : eval(x['like']) if x['like'].isdigit() else x['like'], axis = 1)
         self.data['like'] = self.data.apply(lambda x : 0 if type(x['like']) is type("string") else x['like'], axis = 1)
+
 
     def add_rank_and_replace(self):
         self._clean_like()
         top_20_places = self._aget_weekly_hot_top_N(20)
-        self.data['rank'] = self.data.apply(lambda x : top_20_places.index(x["place"]) if x["place"] in top_20_places else None, axis = 1)
+        self.data['rank'] = self.data.apply(lambda x : top_20_places.index(x["place"])+1 if x["place"] in top_20_places else None, axis = 1)
 
         return
+
 
     def convert_metro_and_local_name(self):
         metroMap = {"서울특별시" : "서울",
@@ -376,6 +377,7 @@ class DataExporter():
                     "경상남도" : "경상도"
                     }
 
+        """
         localNullMetro = {"서울특별시" : "서울",
                           "인천광역시" : "인천",
                           "부산광역시" : "부산",
@@ -385,13 +387,13 @@ class DataExporter():
                     "울산광역시" : "울산",
                     "세종특별자치시" : "세종", 
                     "제주특별자치도" : "제주"}
-
+        """
         def is_in_metro(input_metro_name):
             if input_metro_name in metroMap:
                 return metroMap[input_metro_name]
             else: return None
-
-        self.data['localName'] = self.data.apply(lambda x : None if x["metroName"] in localNullMetro else x["localName"], axis = 1)
+        
+        #self.data['localName'] = self.data.apply(lambda x : None if x["metroName"] in localNullMetro else x["localName"], axis = 1)
         self.data['metroName'] = self.data.apply(lambda x : is_in_metro(x['metroName']), axis = 1)
         
 
