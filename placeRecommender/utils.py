@@ -381,9 +381,67 @@ class newRecommendationDataset():
         return new_list
 
 
-class RecommendExporter():
+class ItemMap():
     def __init__(
         self,
-
+        item_map,
+        number_of_items,
+        feature_size,
+        item_feature
     ):
-        return
+        self.item_map = item_map
+        self.number_of_items = number_of_items
+        self.feature_size = feature_size
+        self.item_feature = item_feature
+
+    def get_item_feature(self) :
+        return self.item_feature
+
+    def search_item(
+        self,
+        raw_item_id
+    ):
+        if raw_item_id in self.item_map :
+            return self.item_map[raw_item_id]
+
+        else :
+            return None
+    
+class UserMap():
+    def __init__(
+        self,
+        user_map,
+        number_of_users,
+        feature_size,
+        user_feature
+    ):
+        self.user_map = user_map
+        self.number_of_users = number_of_users
+        self.feature_size = feature_size
+        self.user_feature = user_feature
+
+
+    def get_item_feature(self) :
+        return self.user_feature
+
+
+    def search_item(
+        self,
+        raw_user_id
+    ):
+        if raw_user_id in self.user_map :
+            return self.user_map[raw_user_id]
+
+        else :
+            return None
+
+
+    def load_from_csv(self) :
+        self.user_map
+        self.user_feature
+
+
+    def export_as_csv(self) :
+        self.user_map
+        self.user_feature
+        
