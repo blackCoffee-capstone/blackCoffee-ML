@@ -279,9 +279,37 @@ class DataExporter():
 
         return full_address['documents'][0]['region_1depth_name'], full_address['documents'][0]['region_2depth_name'], full_address['documents'][0]["address_name"]
 
+    def _search_kakao_coordinate(
+        self,
+        search_address
+    ):
+        url = 'https://dapi.kakao.com/v2/local/search/address.json'
+        # rest_api_key = secrets['Kakao']['rest_key']
 
+        header = {'Authorization': 'KakaoAK ' + self.rest_api_key}
+        params = dict(query=search_address, analyze_type='exact')
+        result = requests.get(url, headers=header, params=params).json()
+
+        if len(result['documents']) > 0:
+            #print(result['documents'][0])
+            longitude = result['documents'][0]['x']
+            latitude  = result['documents'][0]['y']
+            address   = result['documents'][0]['address_name']
+            metroName = result['documents'][0]['address']['region_1depth_name']
+            localName = result['documents'][0]['address']['region_2depth_name']
+        else:
+            longitude = None
+            latitude  = None
+            address   = None
+            metroName = None
+            localName = None
+
+        return pd.Series([longitude, latitude, metroName, localName, address])
     
-
+    def add_log_lat_metro_local_address(self):
+        data = self.data 
+        data[["longitude","latitude","metroName","localName","address"]]= data.apply(lambda x : self._search_kakao_coordinate(x["place"]),axis=1)
+        self.data = data
 
     def _get_pandas_series_address(
         self,
