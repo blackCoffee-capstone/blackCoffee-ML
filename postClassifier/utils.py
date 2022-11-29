@@ -272,11 +272,18 @@ class DataExporter():
         
         lat = str(row['latitude'])
         lng = str(row['longitude'])
+        print(lat,lng)
+        #url = "https://dapi.kakao.com/v2/local/geo/coord2address.json"
+        params = {"x": f"{lng}",
+                  "y": f"{lat}"}
         url = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x="+lng+"&y="+lat
+        #res = requests.get(self.URL_02, headers=self.headers, params=params)
         headers = {"Authorization": "KakaoAK "+ self.rest_api_key}
+        #api_json = requests.get(url, headers=headers, params=params)
         api_json = requests.get(url, headers=headers)
         full_address = json.loads(api_json.text)
-
+        
+        print(full_address)
         return full_address['documents'][0]['region_1depth_name'], full_address['documents'][0]['region_2depth_name'], full_address['documents'][0]["address_name"]
 
     def _search_kakao_coordinate(
@@ -317,8 +324,10 @@ class DataExporter():
     ):
         try :
             metroName, localName, address = self._get_address(row)
+            print([metroName, localName, address])
         except :
             metroName, localName, address = None, None, None
+        
         
         return pd.Series([metroName, localName, address])
 
@@ -342,8 +351,11 @@ class DataExporter():
     def _clean_datetime(
         self,
         row
-    ):
-        newdatetime = row["datetime"][:10]
+    ):  
+        if type(row["datetime"]) != str:
+            newdatetime = row["datetime"].strftime('%Y-%m-%d')
+        else:
+            newdatetime = row["datetime"][:10]
         return newdatetime
 
     def clean_datetime_and_replace(self):

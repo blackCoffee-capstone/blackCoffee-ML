@@ -165,7 +165,9 @@ def main(input_file_path, output_file_path):
 
     if lat_and_long_exist :
         myDataExpoerter.add_metro_local_address()
+        print("lat exist")
     else :
+        print("lat not exist")
         myDataExpoerter.add_log_lat_metro_local_address()
     
     myDataExpoerter.clean_datetime_and_replace()
