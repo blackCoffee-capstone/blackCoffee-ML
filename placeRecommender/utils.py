@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import json
+import torch
+from torch.utils.data import Dataset
 
 class Item():
     def __init__(
@@ -444,4 +446,50 @@ class UserMap():
     def export_as_csv(self) :
         self.user_map
         self.user_feature
+
+
+class HybridRecDataset(Dataset):
+    
+    def __init__(
+        self,
+        df_userTaste,
+        df_spotFeature,
+        df_userlikedspot,
+        df_uservisitedspot
+    ):
+        self.data = None
+        """
+        data = {
+            "1" : {
+                "user_id" : 23,
+                "user_feature" : [0,0,1,0,1,0,1,1,1],
+                "item_id" : 543,
+                "item_feature" : [0,0,1,0,1,1,1,0,1],
+                "rating"  : 0.7
+            },
+            "2" : ...
+        }
+        """
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(
+        self, 
+        index
+    ):
+        single_data = self.data[index]
+
+        user_id      = torch.tensor([single_data["user_id"]])
+        user_feature = torch.tensor(single_data["user_feature"])
+        item_id      = torch.tensor([single_data["item_id"]])
+        item_feature = torch.tensor(single_data["item_feature"])
+        rating       = torch.tensor([single_data["rating"]])
         
+        return {
+            'user_id'      : user_id.to(dtype = torch.long),
+            'user_feature' : user_feature.to(dtype = torch.long),
+            'item_id'      : item_id.to(dtype = torch.long),
+            'item_feature' : item_feature.to(dtype = torch.long),
+            'rating'       : rating.to(dtype = torch.float32)
+        }
