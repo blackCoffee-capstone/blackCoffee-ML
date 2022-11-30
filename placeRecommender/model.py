@@ -1,4 +1,8 @@
 import numpy as np
+import torch
+import json
+import sys
+import os
 from sklearn.decomposition import TruncatedSVD
 from scipy.sparse.linalg import svds
 
@@ -163,96 +167,128 @@ class PlaceRecommender():
     ) :
         return self._find_top_N_item(user_id, topN, None)
 
-import numpy as np
+class HybridRecSystem(torch.nn.Module):
+    def __init__(
+        self,
+        number_of_user = 7500,
+        number_of_item = 7500,
+        user_feature_size = 21,
+        item_feature_size = 39,
+        embedding_size = 50,
+        n_hidden = 20
+    ):  
+        super(HybridRecSystem, self).__init__()
+        self.number_of_user    = number_of_user
+        self.number_of_item    = number_of_item
+        self.user_feature_size = user_feature_size
+        self.item_feature_size = item_feature_size
+        self.embedding_size    = embedding_size
+        self.n_hidden          = n_hidden
 
-class MF():
+        self.user_embedding    = torch.nn.Embedding(number_of_user + 1, embedding_size)
+        self.item_embedding    = torch.nn.Embedding(number_of_item + 1, embedding_size)
+        
+        self.user_feature_layer= torch.nn.Linear(in_features = embedding_size + user_feature_size, out_features= embedding_size)
+        self.item_feature_layer= torch.nn.Linear(in_features = embedding_size + item_feature_size, out_features= embedding_size)
 
-    def __init__(self, R, K, alpha, beta, iterations):
-        """
-        Perform matrix factorization to predict empty
-        entries in a matrix.
+        self.relu = torch.nn.ReLU()
 
-        Arguments
-        - R (ndarray)   : user-item rating matrix
-        - K (int)       : number of latent dimensions
-        - alpha (float) : learning rate
-        - beta (float)  : regularization parameter
-        """
+        self.layer1 = torch.nn.Linear(embedding_size*2, n_hidden)
+        self.drop1  = torch.nn.Dropout(0,1)
 
-        self.R = R
-        self.num_users, self.num_items = R.shape
-        self.K = K
-        self.alpha = alpha
-        self.beta = beta
-        self.iterations = iterations
+        self.layer2 = torch.nn.Linear(n_hidden, 1)
+        
 
-    def train(self):
-        # Initialize user and item latent feature matrice
-        self.P = np.random.normal(scale=1./self.K, size=(self.num_users, self.K))
-        self.Q = np.random.normal(scale=1./self.K, size=(self.num_items, self.K))
+    def forward(
+        self,
+        user_id,
+        item_id,
+        user_features,
+        item_features
+    ) :
 
-        # Initialize the biases
-        self.b_u = np.zeros(self.num_users)
-        self.b_i = np.zeros(self.num_items)
-        self.b = np.mean(self.R[np.where(self.R != 0)])
+        user_embedding = self.user_embedding(user_id)
+        item_embedding = self.item_embedding(item_id)
+        
+        user_hidden_feature = self.relu(torch.cat([user_embedding, user_features], dim = 1))
+        user_hidden_feature = self.user_feature_layer(user_hidden_feature)
+        user_hidden_feature = user_hidden_feature + user_embedding
+ 
+        item_hidden_feature = self.relu(torch.cat([item_embedding, item_features], dim = 1))
+        item_hidden_feature = self.item_feature_layer(item_hidden_feature)
+        item_hidden_feature = item_hidden_feature + item_embedding
 
-        # Create a list of training samples
-        self.samples = [
-            (i, j, self.R[i, j])
-            for i in range(self.num_users)
-            for j in range(self.num_items)
-            if self.R[i, j] > 0
-        ]
+        hidden_feature = self.relu(torch.cat([user_hidden_feature, item_hidden_feature], dim = 1))
+        hidden_feature = self.layer1(hidden_feature)
+        hidden_feature = self.drop1(hidden_feature)
+        
+        hidden_feature = self.relu(hidden_feature)
+        hidden_feature = self.layer2(hidden_feature)
 
-        # Perform stochastic gradient descent for number of iterations
-        training_process = []
-        for i in range(self.iterations):
-            np.random.shuffle(self.samples)
-            self.sgd()
-            mse = self.mse()
-            training_process.append((i, mse))
-            if (i+1) % 10 == 0:
-                print("Iteration: %d ; error = %.4f" % (i+1, mse))
+        ## Final hidden_feature is the predicted ratings that user will make on item
+        ## in Actual Recommendation, use forward with candidate items
+        ## Select items has the higest predicted ratings
+        return hidden_feature
 
-        return training_process
+    def _get_model_config(self):
+        config = {
+            'number_of_user' : self.number_of_user,
+            'number_of_item' : self.number_of_item,
+            'user_feature_size' : self.user_feature_size,
+            'item_feature_size' : self.item_feature_size,
+            'embedding_size'    : self.embedding_size,
+            'n_hidden'   : self.n_hidden
+        }
+        
+        return config
 
-    def mse(self):
-        """
-        A function to compute the total mean square error
-        """
-        xs, ys = self.R.nonzero()
-        predicted = self.full_matrix()
-        error = 0
-        for x, y in zip(xs, ys):
-            error += pow(self.R[x, y] - predicted[x, y], 2)
-        return np.sqrt(error)
+    def _make_model_from_config(
+        self,
+        config
+    ):  
+        number_of_user    = config["number_of_user"]
+        number_of_item    = config["number_of_item"]
+        user_feature_size = config["user_feature_size"]
+        item_feature_size = config["item_feature_size"]
+        embedding_size    = config["embedding_size"]
+        n_hidden          = config["n_hidden"]
 
-    def sgd(self):
-        """
-        Perform stochastic graident descent
-        """
-        for i, j, r in self.samples:
-            # Computer prediction and error
-            prediction = self.get_rating(i, j)
-            e = (r - prediction)
+        self.number_of_user    = number_of_user
+        self.number_of_item    = number_of_item
+        self.user_feature_size = user_feature_size
+        self.item_feature_size = item_feature_size
+        self.embedding_size    = embedding_size
+        self.n_hidden          = n_hidden
 
-            # Update biases
-            self.b_u[i] += self.alpha * (e - self.beta * self.b_u[i])
-            self.b_i[j] += self.alpha * (e - self.beta * self.b_i[j])
+        self.user_embedding    = torch.nn.Embedding(number_of_user + 1, embedding_size)
+        self.item_embedding    = torch.nn.Embedding(number_of_item + 1, embedding_size)
+        
+        self.user_feature_layer= torch.nn.Linear(in_features = embedding_size + user_feature_size, out_features= embedding_size)
+        self.item_feature_layer= torch.nn.Linear(in_features = embedding_size + item_feature_size, out_features= embedding_size)
 
-            # Update user and item latent feature matrices
-            self.P[i, :] += self.alpha * (e * self.Q[j, :] - self.beta * self.P[i,:])
-            self.Q[j, :] += self.alpha * (e * self.P[i, :] - self.beta * self.Q[j,:])
+        self.relu = torch.nn.ReLU()
 
-    def get_rating(self, i, j):
-        """
-        Get the predicted rating of user i and item j
-        """
-        prediction = self.b + self.b_u[i] + self.b_i[j] + self.P[i, :].dot(self.Q[j, :].T)
-        return prediction
+        self.layer1 = torch.nn.Linear(embedding_size*2, n_hidden)
+        self.drop1  = torch.nn.Dropout(0,1)
 
-    def full_matrix(self):
-        """
-        Computer the full matrix using the resultant biases, P and Q
-        """
-        return self.b + self.b_u[:,np.newaxis] + self.b_i[np.newaxis:,] + self.P.dot(self.Q.T)
+        self.layer2 = torch.nn.Linear(n_hidden, 1)
+
+    def save_trained(
+        self,
+        save_path
+    ):
+        config = self._get_model_config()
+        os.makedirs(save_path)
+        with open(save_path+'/config.json', 'w') as fp:
+            json.dump(config, fp)
+        torch.save(self.state_dict(), save_path+"/weight.pt")
+
+
+    def load_trained(
+        self,
+        load_path
+    ):
+        config_file = open(load_path+'/config.json')
+        config = json.load(config_file)
+        self._make_model_from_config(config)
+        self.load_state_dict(torch.load(load_path+'/weight.pt'))
