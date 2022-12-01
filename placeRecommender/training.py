@@ -56,7 +56,7 @@ def valid(
     device,
     loader,
 ):
-    model.train()
+    model.eval()
     total_loss = 0.0
     loss_function = torch.nn.MSELoss()
     for _,data in enumerate(loader, 0):
@@ -102,6 +102,9 @@ def main(input_paths):
     item_map_object.from_dfspots_make_map(df_spot)
     item_map        = item_map_object.spot_map
     number_of_items = item_map_object.number_of_spots
+
+    user_map_object.export_to_pickle(save_path)
+    item_map_object.export_to_pickle(save_path)
 
     df_userTaste = df_userTaste.replace({"id" : user_map})
     df_spot      = df_spot.replace({"id" : item_map})
@@ -234,9 +237,6 @@ def main(input_paths):
         print(str(epoch + 1), ': ',"Validating")
         total_loss = valid(epoch, model, device, HybridRecValidLoader)
         print(f"total_valid_loss:{total_loss}")
-    
-    #os.makedirs(save_path)
-    #torch.save(model.state_dict(), save_path+"/weight.pt")
 
     model.save_trained(save_path)
 

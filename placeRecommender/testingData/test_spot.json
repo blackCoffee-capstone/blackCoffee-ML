@@ -1,0 +1,26 @@
+[
+	{
+		"id": 9,
+		"name": "울릉도",
+		"latitude": 37.5061925878659,
+		"longitude": 130.860436808926,
+		"rank": 8,
+		"snsPostCount": 1,
+		"snsPostLikeNumber": 15,
+		"metroName": "경북",
+		"localName": "울릉군",
+		"themes": ["섬"]
+	},
+	{
+		"id": 21,
+		"name": "전주향교",
+		"latitude": 35.81275813126205,
+		"longitude": 127.15713397830652,
+		"rank": null,
+		"snsPostCount": 1,
+		"snsPostLikeNumber": 0,
+		"metroName": "전북",
+		"localName": "전주시",
+		"themes": ["산"]
+	}
+]
