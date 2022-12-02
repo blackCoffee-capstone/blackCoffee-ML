@@ -10,6 +10,7 @@
 /postClassifier/testingData/*.xlsx
 /postClassifier/testingData/*.csv
 /postClassifier/testingData/*.log
+/postClassifier/saved_model
 
 /placeRecommender/__pycache__
 /placeRecommender/wandb
@@ -23,3 +24,4 @@
 /placeRecommender/testingData/*.xlsx
 /placeRecommender/testingData/*.csv
 /placeRecommender/testingData/*.log
+/placeRecommender/saved_model
