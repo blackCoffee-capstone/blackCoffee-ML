@@ -15,10 +15,12 @@ input_paths = {
     "visited"    : sys.argv[3],
     "liked"      : sys.argv[4]
 }
+
+over_write_standard = eval(sys.argv[5])
 save_path = './saved_model/hybrid_' + datetime.now().strftime("%y%m%d_%H%M%S")
+standard_path = './saved_model/hybrid_standard'
 
 device = 'cuda' if cuda.is_available() else 'cpu'
-device = 'cpu'
 print(device)
 torch.cuda.empty_cache() 
 epsilon = sys.float_info.epsilon 
@@ -82,7 +84,7 @@ def valid(
 
     return total_loss/len(loader)
 
-def main(input_paths):
+def main(input_paths, do_over_write_standard):
 
     wandb.init(project="hybridRec_blackcoffee")
     
@@ -247,7 +249,13 @@ def main(input_paths):
     item_map_object.export_to_pickle(save_path)
 
     print("saved parameters, user and spot maps at :",save_path)
-
+    
+    if do_over_write_standard:
+        model.save_trained(standard_path)
+        user_map_object.export_to_pickle(standard_path)
+        item_map_object.export_to_pickle(standard_path)
+        print("saved parameters, user and spot maps at :",standard_path)
+        
 
 if __name__ == '__main__':
-    main(input_paths)
+    main(input_paths, over_write_standard)
