@@ -10,3 +10,16 @@
 /postClassifier/testingData/*.xlsx
 /postClassifier/testingData/*.csv
 /postClassifier/testingData/*.log
+
+/placeRecommender/__pycache__
+/placeRecommender/wandb
+/placeRecommender/.pytest_cache
+/placeRecommender/*.pyc
+/placeRecommender/*.json
+/placeRecommender/*.xlsx
+/placeRecommender/*.csv
+/placeRecommender/*.log
+/placeRecommender/testingData/*.json
+/placeRecommender/testingData/*.xlsx
+/placeRecommender/testingData/*.csv
+/placeRecommender/testingData/*.log

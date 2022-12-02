@@ -72,15 +72,16 @@ def predict_with_gate(epoch, model, device, loader, gater = None, gater_list = N
 def df_load_from_path(input_file_path):
 
     _is_xlsx = False
-    _is_csv = False
+    _is_csv  = False
+    _is_json = False
 
     file_format = input_file_path.split(".")[1]
     if file_format == 'csv':
         _is_csv = True
-        _is_xlsx = False
-    if file_format == 'xlsx':
-        _is_csv = False
+    elif file_format == 'xlsx':
         _is_xlsx = True
+    elif file_format == 'json':
+        _is_json = True
     else :
         AssertionError("File Format Uknown")
 
@@ -88,6 +89,8 @@ def df_load_from_path(input_file_path):
         return pd.read_csv(input_file_path)
     elif _is_xlsx and not _is_csv :
         return pd.read_excel(input_file_path)
+    elif _is_json :
+        return pd.read_json(input_file_path)
     else :
         AssertionError("File Format Uknown")
 
@@ -112,6 +115,8 @@ def main(input_file_path, output_file_path):
     ooddataset = OneClassClassificationDataset_no_label(dfdataset, tokenizer, MAX_LEN)
    
     ood_loader = DataLoader(ooddataset, **val_params)
+    
+    print(len(dfdataset))
     print(dfdataset.head(10))
 
     ood_model = BertForSequenceClassification.from_pretrained(ood_path)
@@ -155,13 +160,23 @@ def main(input_file_path, output_file_path):
     """
     myDataExpoerter = DataExporter(dfthmdataset, "3def73060f55c3515922f19109dc469e")
     myDataExpoerter.add_theme_name_and_replace()
-    myDataExpoerter.add_and_replace_column_with_address()
+    
+    lat_and_long_exist = "latitude" in myDataExpoerter.data
+
+    if lat_and_long_exist :
+        myDataExpoerter.add_metro_local_address()
+        print("lat exist")
+    else :
+        print("lat not exist")
+        myDataExpoerter.add_log_lat_metro_local_address()
+    
     myDataExpoerter.clean_datetime_and_replace()
     myDataExpoerter.convert_metro_and_local_name()
-    myDataExpoerter.data = myDataExpoerter.data[myDataExpoerter.data.metroName != None]
+    #myDataExpoerter.data = myDataExpoerter.data[myDataExpoerter.data.metroName != None]
 
     myDataExpoerter.add_rank_and_replace()
-    myDataExpoerter.data.rename(columns = {'place':'name','like':'likeNumber','text':'content','link':'photoUrl','datetime':'date'},inplace=True)
+    print(myDataExpoerter.data)
+    myDataExpoerter.data.rename(columns = {'place':'name','like':'likeNumber','text':'content','datetime':'date'},inplace=True)
     myDataExpoerter.data = myDataExpoerter.data.drop(columns = ['is_trip','theme_id'])
     
     data_dict = myDataExpoerter.data.to_dict('index')
