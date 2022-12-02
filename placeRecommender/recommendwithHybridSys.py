@@ -8,8 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 
 input_path = sys.argv[1]
 output_path = sys.argv[2]
-target_id = int(sys.argv[3])
-loading_model_path = sys.argv[4]
+loading_model_path = "saved_model/hybrid_standard"
 device = "cpu"
 list_recommendation_length = 10
 
@@ -30,7 +29,10 @@ def recommendHybrid(
         item_feature = data['item_feature'].to(device, dtype = torch.long)
 
         predicted_rating = model.forward(user_id,item_id,user_feature,item_feature)
-        
+        batch_size_out, hidden_feature_out = predicted_rating.shape
+        predicted_rating = predicted_rating.view([batch_size_out])
+        print(item_id)
+        print(predicted_rating)
         ratings = torch.cat([ratings, predicted_rating], dim=0)
 
     return ratings
@@ -66,10 +68,13 @@ def main(input_file_path, output_file_path, model_path):
     spotMap_object = SpotMap()
     spotMap_object.load_from_pickle(model_path)
 
+    print(userMap_object.user_map, userMap_object.user_feature_map)
+    print(spotMap_object.spot_map, spotMap_object.spot_feature_map)
+
     ## GET target_user_id, user_feature from input_file
     ## If user_id not in map get the most simlar user id
     taraget_user_object = TargetUser()
-    taraget_user_object.get_target_user_id_and_feature(input_file_path, UserMap, 0.8)  
+    taraget_user_object.get_target_user_id_and_feature(input_file_path, userMap_object, 0.8)  
     user_id = taraget_user_object.user_id
     user_feature = taraget_user_object.user_feature
 
@@ -94,7 +99,7 @@ def main(input_file_path, output_file_path, model_path):
     
     ## Remove Padding item_id
     sorted_items = every_item_ordered_by_ratings.tolist()
-    sorted_items[:-1] 
+    sorted_items = sorted_items[:-1] 
     
     if len(sorted_items) > list_recommendation_length:
         list_rec = sorted_items[0:list_recommendation_length]
@@ -102,8 +107,7 @@ def main(input_file_path, output_file_path, model_path):
         list_rec = sorted_items
 
     map_rec = []
-    ## TODO:
-    ## GEO_NAMES
+
     geo_names = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
 
     for geo_name in geo_names:
