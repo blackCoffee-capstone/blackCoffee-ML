@@ -278,7 +278,8 @@ class HybridRecSystem(torch.nn.Module):
         save_path
     ):
         config = self._get_model_config()
-        os.makedirs(save_path)
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
         with open(save_path+'/config.json', 'w') as fp:
             json.dump(config, fp)
         torch.save(self.state_dict(), save_path+"/weight.pt")
