@@ -437,29 +437,6 @@ class SpotMap():
     ):
         spot_record = df_spots.to_dict("records")
         spot_map = {}
-        new_spot_id = 1
-        for spot in spot_record:
-            spot_map[spot['id']] = new_spot_id
-            new_spot_id = new_spot_id + 1
-
-        self.spot_map = spot_map
-        self.number_of_spots = len(spot_map)
-
-    def _from_spot_record_get_feature_list(
-        self,
-        spot
-    ):  
-        feature_list = spot['themes'] 
-        feature_list.append(spot['metroName'])
-
-        return feature_list
-
-    def from_dfspots_make_map_and_spot_feature(
-        self,
-        df_spots
-    ):
-        spot_record = df_spots.to_dict("records")
-        spot_map = {}
         spot_feature_map = {}
 
         new_spot_id = 1
@@ -474,6 +451,18 @@ class SpotMap():
         self.spot_map = spot_map
         self.spot_feature_map = spot_feature_map
         self.number_of_spots = len(spot_map)
+
+
+    def _from_spot_record_get_feature_list(
+        self,
+        spot
+    ):  
+
+        feature_list = spot['themes'] 
+        feature_list.append(spot['metroName'])
+
+        return feature_list
+
 
     def load_from_pickle(
         self,
@@ -688,6 +677,7 @@ class HybridRecDataset(Dataset):
         print(df_data)
 
         self.data = df_data.to_dict("index")
+        self._min_max_normalize_rating(5.0, 0.0)
         """
         data = {
             "0" : {
@@ -700,6 +690,23 @@ class HybridRecDataset(Dataset):
             "1" : ...
         }
         """
+    def _min_max_normalize_rating(
+        self,
+        max_rating : float,
+        min_rating : float
+    ) -> None:  
+
+        data = self.data
+
+        for index, record in data.items():
+            rating = record["rating"]
+            normalized_rating = (rating - min_rating) / (max_rating - min_rating)
+            data[index]["min_max_normalized_rating"] = normalized_rating
+
+        self.data = data
+
+
+
     def _calculate_ratings(
         self,
         row : pd.Series
@@ -707,9 +714,9 @@ class HybridRecDataset(Dataset):
         rating = 0.0 
 
         if not np.isnan(row["liked_item_id"]):
-            ratings = ratings + 3.6
+            rating = rating + 3.6
         if not np.isnan(row["visited_item_id"]):
-            ratings = ratings + 0.1 * min(row['visit_count'] ,14)
+            rating = rating + 0.1 * min(row['visit_count'] ,14)
 
         return rating
     
@@ -807,13 +814,14 @@ class HybridRecDataset(Dataset):
         item_id      = torch.tensor(single_data["item_id"])
         item_feature = torch.tensor(single_data["item_feature"])
         rating       = torch.tensor(single_data["rating"])
-        
+        min_max_normalized_rating = torch.tensor(single_data["min_max_normalized_rating"])
         return {
             'user_id'      : user_id.to(dtype = torch.long),
             'user_feature' : user_feature.to(dtype = torch.long),
             'item_id'      : item_id.to(dtype = torch.long),
             'item_feature' : item_feature.to(dtype = torch.long),
-            'rating'       : rating.to(dtype = torch.float32)
+            'rating'       : rating.to(dtype = torch.float32),
+            'min_max_normalized_rating' : min_max_normalized_rating.to(dtype = torch.float32)
         }
 
 class RecCandidateDataset(HybridRecDataset):
@@ -835,7 +843,8 @@ class RecCandidateDataset(HybridRecDataset):
                 "user_feature" : user_feature_ids,
                 "item_id" : spot_id,
                 "item_feature" : item_feature_ids,
-                "rating" : 0.0
+                "rating" : 0.0,
+                "min_max_normalized_rating" : 0.0
             }
             idx = idx + 1
         
@@ -855,7 +864,9 @@ class RecCandidateDataset(HybridRecDataset):
 
 
 class TargetUser():
-    def __init__():
+    def __init__(
+        self
+    ):
         None
 
     def get_target_user_id_and_feature(
@@ -867,13 +878,13 @@ class TargetUser():
         user_id = 0
         user_feature = []
 
-        feature_records = data['usersTastes']
-        for record in feature_records:
-            user_feature.append(record['name'])
-
         ## Load Data from Json
         with open(file_path, 'r', encoding="UTF-8") as f:
             data = json.load(f)
+
+        feature_records = data['usersTastes']
+        for record in feature_records:
+            user_feature.append(record['name'])
 
         if data['userId'] in user_map.user_map :
             ## Seen User

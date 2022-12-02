@@ -39,16 +39,20 @@ def train(
         item_id      = data['item_id'].to(device, dtype = torch.long)
         item_feature = data['item_feature'].to(device, dtype = torch.long)
         rating       = data['rating'].to(device, dtype = torch.float32)
-
+        min_max_normalized_rating = data['min_max_normalized_rating'].to(device, dtype = torch.float32)
+         
         predicted_rating = model.forward(user_id,item_id,user_feature,item_feature)
-        loss = loss_function(predicted_rating, rating)
+        batch_size_out, hidden_feature_out = predicted_rating.shape
+        predicted_rating = predicted_rating.view([batch_size_out])
+        print(predicted_rating, min_max_normalized_rating)
+        loss = loss_function(predicted_rating, min_max_normalized_rating)
         
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         
         if _%500==0:
-            print(f'Epoch: {epoch}, Loss:  {loss.item()}')
+            print(f'Epoch: {epoch+1}, Loss:  {loss.item()}')
 
 def valid(
     epoch,
@@ -68,10 +72,13 @@ def valid(
         rating       = data['rating'].to(device, dtype = torch.float32)
 
         predicted_rating = model.forward(user_id,item_id,user_feature,item_feature)
+        batch_size_out, hidden_feature_out = predicted_rating.shape
+        
+        predicted_rating = predicted_rating.view([batch_size_out])
         loss = loss_function(predicted_rating, rating)
         total_loss += loss.item()
         if _%500==0:
-            print(f'Epoch: {epoch}, Loss:  {loss.item()}')
+            print(f'Epoch: {epoch+1}, Loss:  {loss.item()}')
 
     return total_loss/len(loader)
 
@@ -82,7 +89,7 @@ def main(input_paths):
     config = wandb.config           # Initialize config
     config.TRAIN_BATCH_SIZE = 2     # input batch size for training (default: 64)
     config.VALID_BATCH_SIZE = 1     # input batch size for testing (default: 1)
-    config.TRAIN_EPOCHS =  10       # number of epochs to train (default: 10)
+    config.TRAIN_EPOCHS =  50       # number of epochs to train (default: 10)
     config.VAL_EPOCHS = 1  
     config.LEARNING_RATE = 4.00e-05 # learning rate (default: 0.01)
     config.SEED = 420               # random seed (default: 42)
@@ -102,9 +109,6 @@ def main(input_paths):
     item_map_object.from_dfspots_make_map(df_spot)
     item_map        = item_map_object.spot_map
     number_of_items = item_map_object.number_of_spots
-
-    user_map_object.export_to_pickle(save_path)
-    item_map_object.export_to_pickle(save_path)
 
     df_userTaste = df_userTaste.replace({"id" : user_map})
     df_spot      = df_spot.replace({"id" : item_map})
@@ -239,11 +243,11 @@ def main(input_paths):
         print(f"total_valid_loss:{total_loss}")
 
     model.save_trained(save_path)
+    user_map_object.export_to_pickle(save_path)
+    item_map_object.export_to_pickle(save_path)
 
-    new_model = HybridRecSystem()
-    new_model.load_trained(save_path)
+    print("saved parameters, user and spot maps at :",save_path)
 
-    print(model.number_of_item, new_model.number_of_item)
 
 if __name__ == '__main__':
     main(input_paths)
