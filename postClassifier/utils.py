@@ -272,7 +272,7 @@ class DataExporter():
         
         lat = str(row['latitude'])
         lng = str(row['longitude'])
-        print(lat,lng)
+        #print(lat,lng)
         #url = "https://dapi.kakao.com/v2/local/geo/coord2address.json"
         params = {"x": f"{lng}",
                   "y": f"{lat}"}
@@ -283,7 +283,7 @@ class DataExporter():
         api_json = requests.get(url, headers=headers)
         full_address = json.loads(api_json.text)
         
-        print(full_address)
+        print(full_address, "latitude should be 37~38 but", lat)
         return full_address['documents'][0]['region_1depth_name'], full_address['documents'][0]['region_2depth_name'], full_address['documents'][0]["address_name"]
 
     def _search_kakao_coordinate(
@@ -338,12 +338,20 @@ class DataExporter():
         self.data = data
 
 
+    def _replace_theme_id_to_name(
+        self,
+        row
+    ):  
+        labelMap = ['산', '럭셔리', '역사', '웰빙', '바다','카페','공원','전시장','건축' ,'사찰','가족','학교','놀이공원','겨울','엑티비티','캠핑','섬','커플','저수지','폭포','ERR']
+
+        return labelMap[row["theme_id"]]
+
     def add_theme_name_and_replace(
         self
     ):  
-        labelMap = ['산', '럭셔리', '역사', '웰빙', '바다','카페','공원','전시장','건축' ,'사찰','가족','학교','놀이공원','겨울','엑티비티','캠핑','섬','커플','저수지','폭포','ERR']
-       
-        self.data['themeName'] = self.data.apply(lambda x : labelMap[x['theme_id']], axis = 1)
+        #labelMap = ['산', '럭셔리', '역사', '웰빙', '바다','카페','공원','전시장','건축' ,'사찰','가족','학교','놀이공원','겨울','엑티비티','캠핑','섬','커플','저수지','폭포','ERR']
+        
+        self.data['themeName'] = self.data.apply(lambda x : self._replace_theme_id_to_name(x), axis = 1)
 
         return
 

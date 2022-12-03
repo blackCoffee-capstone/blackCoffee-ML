@@ -35,10 +35,10 @@ def predict_with_no_gate(epoch, model, device, loader):
 
     with torch.no_grad():
         for _, data in enumerate(loader, 0):
-
+            
             ids  = data['input_text_ids'].to(device, dtype = torch.long)
             mask = data['input_mask'].to(device, dtype = torch.long)
-
+            
             logits = model.forward(input_ids = ids, attention_mask = mask).logits
 
             predicted_class_id = torch.argmax(F.softmax(logits,dim=1), dim=1).cpu().item()
@@ -127,8 +127,13 @@ def main(input_file_path, output_file_path):
     for epoch in range(1):
         generated_is_trip_label = predict_with_no_gate(epoch, ood_model, device, ood_loader)
 
+    
     dfdataset['is_trip'] = pd.DataFrame.from_dict(generated_is_trip_label)
+
+    before_trip_trim = len(dfdataset)
     dfthmdataset = dfdataset[dfdataset.is_trip != 1]
+    after_trip_trim = len(dfthmdataset)
+    print("Total Trip Post count = " , after_trip_trim, " in total = ", before_trip_trim)
     dfthmdataset.reset_index(drop=True, inplace=True)
 
     thmdataset = PostClassificationDataset_no_label(dfthmdataset, tokenizer, MAX_LEN)
@@ -154,18 +159,21 @@ def main(input_file_path, output_file_path):
         generated_theme_label = predict_with_no_gate(epoch, thm_model, device, thm_loader)
 
     dfthmdataset["theme_id"] = pd.DataFrame.from_dict(generated_theme_label)
+    
     dfthmdataset = dfthmdataset[dfthmdataset.theme_id != 20]
     """
     Export to file
     """
     myDataExpoerter = DataExporter(dfthmdataset, "3def73060f55c3515922f19109dc469e")
-    myDataExpoerter.add_theme_name_and_replace()
+    #print(myDataExpoerter.data)
     
+    myDataExpoerter.add_theme_name_and_replace()
+    #print(myDataExpoerter.data)
     lat_and_long_exist = "latitude" in myDataExpoerter.data
 
     if lat_and_long_exist :
-        myDataExpoerter.add_metro_local_address()
         print("lat exist")
+        myDataExpoerter.add_metro_local_address()
     else :
         print("lat not exist")
         myDataExpoerter.add_log_lat_metro_local_address()
@@ -175,7 +183,7 @@ def main(input_file_path, output_file_path):
     #myDataExpoerter.data = myDataExpoerter.data[myDataExpoerter.data.metroName != None]
 
     myDataExpoerter.add_rank_and_replace()
-    print(myDataExpoerter.data)
+    #print(myDataExpoerter.data)
     myDataExpoerter.data.rename(columns = {'place':'name','like':'likeNumber','text':'content','datetime':'date'},inplace=True)
     myDataExpoerter.data = myDataExpoerter.data.drop(columns = ['is_trip','theme_id'])
     
