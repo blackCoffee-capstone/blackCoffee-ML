@@ -19,6 +19,10 @@ from bs4 import BeautifulSoup as bs
 import json
 import os.path
 
+device = 'cpu'
+ood_path = './saved_model/occ_standard/'
+thm_path = './saved_model/thm_standard/'
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -34,14 +38,15 @@ def _predict(
     model.eval()
     generated_labels = {"label":[]}
     
-    input_text_ids = data['input_ids'].squeeze()
+    input_text_ids = data['input_ids']
     input_mask     = data['attention_mask']
 
     ids  = input_text_ids.to(device, dtype = torch.long)
-    mask = input_mask.to(device, dtype = torch.long)
-            
-    logits = model.forward(input_ids = ids, attention_mask = mask).logits
+    #mask = input_mask.to(device, dtype = torch.long)
 
+    print(ids.shape)        
+    logits = model.forward(input_ids = ids, attention_mask = None).logits
+    
     predicted_class_id = torch.argmax(F.softmax(logits,dim=1), dim=1).cpu().item()
     generated_labels["label"].extend([predicted_class_id])
 
@@ -49,10 +54,9 @@ def _predict(
 
 def _inference(txt):
     
-    """
     
     MAX_LEN = 512
-    device = 'cpu'
+    
 
     tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
     ood_model = BertForSequenceClassification.from_pretrained(ood_path)
@@ -78,15 +82,14 @@ def _inference(txt):
         return_tensors = "pt"
     )
 
-    
+    print(txt)
     #First determine if the post is travel related or not
     
     
     
 
-    ood_labels = _predict(txt, ood_model, device)
+    ood_labels = _predict(input_text, ood_model, device)
     print(ood_labels['label'][0])
-    """
     
     label_map = {
         0 : "mountain",
@@ -111,19 +114,14 @@ def _inference(txt):
         19 : "waterfall" 
     }
 
-    ood_labels = {'label':[]}
-    ood_labels['label'] = [0]
-
-    thm_labels = {'label':[]}
-    thm_labels['labels'] = [4]
-
     if ood_labels['label'][0] == 0 :
         is_trip_return = "This post is about Trip"
         
-        #thm_labels = _predict(txt, thm_model, device)
+        thm_labels = _predict(input_text, thm_model, device)
         
-        if thm_labels['labels'][0] in label_map :
-            theme_return = label_map[thm_labels['labels'][0]]
+        print(thm_labels)
+        if thm_labels['label'][0] in label_map :
+            theme_return = label_map[thm_labels['label'][0]]
         else : 
             theme_return = "Uknown Theme"
     else:
