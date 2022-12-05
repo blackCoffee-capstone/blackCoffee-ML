@@ -450,8 +450,45 @@ class DataExporter():
         self.data['localName'] = self.data.apply(lambda x : None if x["metroName"] in localNullMetro else x["localName"], axis = 1)
         self.data['localName'] = self.data.apply(lambda x : suwon_exception(x["localName"]), axis = 1)
         self.data['metroName'] = self.data.apply(lambda x : is_in_metro(x['metroName']), axis = 1)
-        
 
+
+    def _markSpotByName(
+        self,
+        row : pd.Series
+    ) -> int:  
+        spot_name = row["place"]
+
+        filtering_names = [
+            "서울",
+            "인천",
+            "부산",
+            "대구",
+            "대전",
+            "광주",
+            "울산",
+            "경기",
+            "강원",
+            "충북",
+            "충남",
+            "전북",
+            "전남",
+            "경북",
+            "경남"
+        ]
+    
+        if spot_name in filtering_names:
+            ## INVALID SPOT NAME
+            return 0    
+        else :
+            ## VALID SPOT NAME
+            return 1
+
+    def sortOutByNames(self):
+        data = self.data 
+        data["invalid_name"]= data.apply(lambda x : self._markSpotByName(x),axis=1)
+        data = data["invalid_name" != 0]
+        data = data.drop(columns = ['invalid_name'])
+        self.data = data
 
 def testOneClassClassificationDataset():
     dfdataset  = pd.read_excel('testingData/instagram_post.xlsx')

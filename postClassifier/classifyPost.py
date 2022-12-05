@@ -183,6 +183,8 @@ def main(input_file_path, output_file_path):
     #myDataExpoerter.data = myDataExpoerter.data[myDataExpoerter.data.metroName != None]
 
     myDataExpoerter.add_rank_and_replace()
+    myDataExpoerter.sortOutByNames()
+
     #print(myDataExpoerter.data)
     myDataExpoerter.data.rename(columns = {'place':'name','like':'likeNumber','text':'content','datetime':'date'},inplace=True)
     myDataExpoerter.data = myDataExpoerter.data.drop(columns = ['is_trip','theme_id'])
