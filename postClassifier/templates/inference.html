@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>
+        Inference for Classifing Post
+    </title>
+    <style>
+    </style>
+</head>
+<body>
+    <h1> Input Text for Classification</h1><br>
+    <form method="GET" action="/inference">
+        <div>
+            <label for="char1"> TEXT </label>
+            <input type="text" name="char1">
+        </div>
+        <div>
+            <div class = "is_trip">
+                {{is_trip}}
+            </div>
+            <div class = "theme">
+                {{theme}}
+            </div>
+        </div>
+        <div class='button'>
+            <button type="submit"> SUBMIT</button>
+        </div>
+    </form>
+</body>
+</html>
