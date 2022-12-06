@@ -668,6 +668,7 @@ class HybridRecDataset(Dataset):
         if df_userTaste is None or df_spotFeature is None or df_userlikedspot is None or df_uservisitedspot is None:
             return
 
+        print(len(df_userlikedspot), len(df_uservisitedspot))
         df_user_item_interaction = self._generate_user_item_interaction(df_userlikedspot, df_uservisitedspot)
         df_user_feature_ids = self._generate_user_feature_ids(df_userTaste, dict_user_feature_map)
         df_spot_feature_ids = self._generate_spot_feature_ids(df_spotFeature, dict_item_feature_map)
@@ -677,7 +678,7 @@ class HybridRecDataset(Dataset):
         print(df_data)
 
         self.data = df_data.to_dict("index")
-        self._min_max_normalize_rating(5.0, 0.0)
+        self._min_max_normalize_rating(10.0, 0.0)
         """
         data = {
             "0" : {
@@ -714,9 +715,9 @@ class HybridRecDataset(Dataset):
         rating = 0.0 
 
         if not np.isnan(row["liked_item_id"]):
-            rating = rating + 3.6
+            rating = rating + 0.0
         if not np.isnan(row["visited_item_id"]):
-            rating = rating + 0.1 * min(row['visit_count'] ,14)
+            rating = rating + 0.5 * min(row['visit_count'] , 20)
 
         return rating
     
@@ -783,7 +784,11 @@ class HybridRecDataset(Dataset):
         item_id = row['id']
         item_feature_ids = [0] * len(dict_item_feature_map)
         for theme_name in row['themes']:
-            item_feature_ids[dict_item_feature_map[theme_name]] = 1
+            if theme_name in dict_item_feature_map:
+                item_feature_ids[dict_item_feature_map[theme_name]] = 1
+            else :
+                print(theme_name)
+            
         metroName = row['metroName']
         item_feature_ids[dict_item_feature_map[metroName]] = 1
 
@@ -833,8 +838,9 @@ class RecCandidateDataset(HybridRecDataset):
     ) -> None:
 
         data = {}
-        
-        user_feature_ids = self._get_feature_ids_from_list(user_feature, self.dict_user_feature_map)   
+        print("user_id: ", user_id, "\nfeature_list :",user_feature)
+        user_feature_ids = self._get_feature_ids_from_list(user_feature, self.dict_user_feature_map)
+        print("user_feature_ids :",user_feature_ids)
         idx = 0
         for spot_id, spot_features in spot_map.spot_feature_map.items():
             item_feature_ids = self._get_feature_ids_from_list(spot_features, self.dict_item_feature_map)    
@@ -858,8 +864,9 @@ class RecCandidateDataset(HybridRecDataset):
 
         feature_ids = [0] * len(feature_map)
         for feature_name in list:
-            feature_ids[feature_map[feature_name]] = 1
-
+            if feature_name in feature_map:
+                feature_ids[feature_map[feature_name]] = 1
+            else: print(feature_name, "None")
         return feature_ids
 
 

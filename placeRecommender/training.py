@@ -16,6 +16,7 @@ input_paths = {
     "liked"      : sys.argv[4]
 }
 
+input_paths["liked"] = "./testingData/test_wish_spot.json"
 over_write_standard = eval(sys.argv[5])
 save_path = './saved_model/hybrid_' + datetime.now().strftime("%y%m%d_%H%M%S")
 standard_path = './saved_model/hybrid_standard'
@@ -46,7 +47,7 @@ def train(
         predicted_rating = model.forward(user_id,item_id,user_feature,item_feature)
         batch_size_out, hidden_feature_out = predicted_rating.shape
         predicted_rating = predicted_rating.view([batch_size_out])
-        print(predicted_rating, min_max_normalized_rating)
+        #print(predicted_rating, min_max_normalized_rating)
         loss = loss_function(predicted_rating, min_max_normalized_rating)
         
         optimizer.zero_grad()
