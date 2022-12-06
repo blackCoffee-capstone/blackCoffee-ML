@@ -92,10 +92,10 @@ def main(input_paths, do_over_write_standard):
     config = wandb.config           # Initialize config
     config.TRAIN_BATCH_SIZE = 2     # input batch size for training (default: 64)
     config.VALID_BATCH_SIZE = 1     # input batch size for testing (default: 1)
-    config.TRAIN_EPOCHS =  50       # number of epochs to train (default: 10)
+    config.TRAIN_EPOCHS =  65       # number of epochs to train (default: 10)
     config.VAL_EPOCHS = 1  
-    config.LEARNING_RATE = 4.00e-05 # learning rate (default: 0.01)
-    config.SEED = 420               # random seed (default: 42)
+    config.LEARNING_RATE = 5.00e-05 # learning rate (default: 0.01)
+    config.SEED = 423                # random seed (default: 42)
 
     ## LOAD Dataset
     df_userTaste = pd.read_json(input_paths["user_taste"])
