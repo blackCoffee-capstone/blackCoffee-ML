@@ -283,7 +283,7 @@ class DataExporter():
         api_json = requests.get(url, headers=headers)
         full_address = json.loads(api_json.text)
         
-        print(full_address, "latitude should be 37~38 but", lat)
+        #print(full_address, "latitude should be 37~38 but", lat)
         return full_address['documents'][0]['region_1depth_name'], full_address['documents'][0]['region_2depth_name'], full_address['documents'][0]["address_name"]
 
     def _search_kakao_coordinate(
@@ -324,7 +324,7 @@ class DataExporter():
     ):
         try :
             metroName, localName, address = self._get_address(row)
-            print([metroName, localName, address])
+            #print([metroName, localName, address])
         except :
             metroName, localName, address = None, None, None
         
@@ -402,7 +402,7 @@ class DataExporter():
 
     def add_rank_and_replace(self):
         self._clean_like()
-        top_20_places = self._aget_weekly_hot_top_N(20)
+        top_20_places = self._aget_weekly_hot_top_N(len(self.data))
         self.data['rank'] = self.data.apply(lambda x : top_20_places.index(x["place"])+1 if x["place"] in top_20_places else None, axis = 1)
 
         return
@@ -473,7 +473,10 @@ class DataExporter():
             "전북",
             "전남",
             "경북",
-            "경남"
+            "경남",
+            "Seoul",
+            "Seoul Korea",
+            "Seoul. Korea"
         ]
     
         if spot_name in filtering_names:
@@ -486,7 +489,8 @@ class DataExporter():
     def sortOutByNames(self):
         data = self.data 
         data["invalid_name"]= data.apply(lambda x : self._markSpotByName(x),axis=1)
-        data = data["invalid_name" != 0]
+        data = data[data.invalid_name != 0]
+        
         data = data.drop(columns = ['invalid_name'])
         self.data = data
 
