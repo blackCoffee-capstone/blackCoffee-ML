@@ -59,7 +59,7 @@ class Analyzer():
     def sort_spot_id_by_likes(
         self,
         week : str,
-    ) -> dict:
+    ) -> list:
 
         
         weekly_statistics =  self._get_spots_weekly_likes(week).groupby(["spot_id","week"], group_keys=False)['like'].sum()
@@ -128,7 +128,7 @@ class Analyzer():
     def sort_spot_id_by_buzz(
         self,
         week : str,
-    ) -> dict:
+    ) -> list:
         
         last_week_index = self.list_of_weeks.index(week)
 
@@ -145,8 +145,6 @@ class Analyzer():
         
         sorted_prediction_err = dict(sorted(prediction_err.items(), key=lambda item: item[1], reverse=True))
         
-       
-
         sorted_spot_ids_with_rank = []
         
         rank = 1
@@ -159,10 +157,23 @@ class Analyzer():
         
         return sorted_spot_ids_with_rank
 
+    def _set_max_rank(
+        self,
+        max_length :int,
+        sorted_spot_ids_with_rank : list
+    ):
+        if len(sorted_spot_ids_with_rank) > max_length:
+            return sorted_spot_ids_with_rank[:max_length]
+        
+        else:
+            return sorted_spot_ids_with_rank
+        
+
     def calculate_trend_rank(
         self,
         week : str,
-    ):  
+        max_length : int = 50
+    ) -> list:  
         list_of_weeks    = self.list_of_weeks
         week_index= self.list_of_weeks.index(week)
         
@@ -180,5 +191,7 @@ class Analyzer():
         
         elif week_index  >= 2:
             sorted_spot_ids_with_rank = self.sort_spot_id_by_buzz(week)
+
+        sorted_spot_ids_with_rank = self._set_max_rank(max_length, sorted_spot_ids_with_rank)
 
         return sorted_spot_ids_with_rank
