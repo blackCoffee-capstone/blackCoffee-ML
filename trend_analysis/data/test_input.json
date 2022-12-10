@@ -1,0 +1,88 @@
+
+[
+	{
+		"spotId":1,
+		"snsPosts":[
+			{
+				"likeNumber": "97",
+				"week":"2022081"
+			},
+			{
+				"likeNumber": "97",
+				"week":"2022082"
+			},
+            {
+				"likeNumber": "107",
+				"week":"2022082"
+			}
+		]
+	},
+	{
+		"spotId":2,
+		"snsPosts":[
+			{
+				"likeNumber": "97",
+				"week":"2022081"
+			},
+			{
+				"likeNumber": "97",
+				"week":"2022082"
+			},
+            {
+				"likeNumber": "97",
+				"week":"2022083"
+			}
+		]
+	},
+	{
+		"spotId":3,
+		"snsPosts":[
+			{
+				"likeNumber": "97",
+				"week":"2022083"
+			},
+			{
+				"likeNumber": "107",
+				"week":"2022083"
+			},
+            {
+				"likeNumber": "200",
+				"week":"2022084"
+			}
+		]
+	},
+	{
+		"spotId":4,
+		"snsPosts":[
+			{
+				"likeNumber": "200",
+				"week":"2022081"
+			},
+			{
+				"likeNumber": "97",
+				"week":"2022083"
+			},
+            {
+				"likeNumber": "40",
+				"week":"2022083"
+			}
+		]
+	},
+	{
+		"spotId":5,
+		"snsPosts":[
+			{
+				"likeNumber": "1",
+				"week":"2022082"
+			},
+			{
+				"likeNumber": "123",
+				"week":"2022084"
+			},
+            {
+				"likeNumber": "200",
+				"week":"2022084"
+			}
+		]
+	}
+]
