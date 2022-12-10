@@ -25,3 +25,7 @@
 /placeRecommender/testingData/*.csv
 /placeRecommender/testingData/*.log
 /placeRecommender/saved_model
+
+/trend_analysis/data
+/trend_analysis/*.json
+/trend_analysis/__pycache__
