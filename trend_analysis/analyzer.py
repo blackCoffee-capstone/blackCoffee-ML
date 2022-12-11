@@ -125,6 +125,7 @@ class Analyzer():
 
         return y_true - model.predict([[len(list_of_weeks)]])
 
+
     def sort_spot_id_by_buzz(
         self,
         week : str,
@@ -156,6 +157,64 @@ class Analyzer():
             rank = rank + 1
         
         return sorted_spot_ids_with_rank
+
+
+    def _from_normal_distribution_get_z_score(
+        self,
+        spot_weekly_trends : pd.Series,
+        last_week_index : int
+    ) -> LinearRegression:
+        
+        list_of_weeks = self.list_of_weeks
+        X = np.array(list(range(1, len(list_of_weeks)+1))[:last_week_index])
+        X = X.reshape(-1, 1)
+        y = spot_weekly_trends.iloc[:last_week_index]
+        
+        try:
+            y_true = spot_weekly_trends[list_of_weeks[last_week_index]]
+        except:
+            print("err!",spot_weekly_trends, last_week_index, self.list_of_weeks)
+            y_true = 0
+
+        mean = np.mean(y)
+        std = np.std(y)
+
+        z_score = (y_true - mean) / (std + sys.float_info.epsilon)
+
+        return z_score
+
+
+
+    def sort_spot_id_by_distribution(self,
+        week : str,
+    ) -> list:
+        last_week_index = self.list_of_weeks.index(week)
+
+        weekly_statistics = self.get_weekly_statistics()
+        list_of_weeks    = self.list_of_weeks
+        list_of_spot_ids = self.data.spot_id.unique()
+
+        z_score = {}
+        for spot_id in list_of_spot_ids:
+            spot_weekly_trend = weekly_statistics[spot_id]
+            spot_weekly_trend = self._fill_in_spot_weekly_trends(spot_weekly_trend)
+            z_score[spot_id] = self._from_normal_distribution_get_z_score(spot_weekly_trend, last_week_index)
+        
+        z_score = dict(sorted(z_score.items(), key=lambda item: item[1], reverse=True))
+        
+        sorted_spot_ids_with_rank = []
+        
+        rank = 1
+        for spot_id in z_score:
+            sorted_spot_ids_with_rank.append({
+                "spotId": int(spot_id),
+                "rank" : rank
+            })
+            rank = rank + 1
+        
+        return sorted_spot_ids_with_rank
+
+
 
     def _set_max_rank(
         self,
@@ -190,8 +249,8 @@ class Analyzer():
         
         
         elif week_index  >= 2:
-            sorted_spot_ids_with_rank = self.sort_spot_id_by_buzz(week)
-
+            #sorted_spot_ids_with_rank = self.sort_spot_id_by_buzz(week)
+            sorted_spot_ids_with_rank = self.sort_spot_id_by_distribution(week)
         sorted_spot_ids_with_rank = self._set_max_rank(max_length, sorted_spot_ids_with_rank)
 
         return sorted_spot_ids_with_rank
