@@ -16,12 +16,13 @@ input_paths = {
     "liked"      : sys.argv[4]
 }
 
-input_paths["liked"] = "./testingData/test_wish_spot.json"
+#input_paths["liked"] = "./testingData/test_wish_spot.json"
 over_write_standard = eval(sys.argv[5])
 save_path = './saved_model/hybrid_' + datetime.now().strftime("%y%m%d_%H%M%S")
 standard_path = './saved_model/hybrid_standard'
 
 device = 'cuda' if cuda.is_available() else 'cpu'
+device = 'cpu'
 print(device)
 torch.cuda.empty_cache() 
 epsilon = sys.float_info.epsilon 
@@ -43,7 +44,9 @@ def train(
         item_feature = data['item_feature'].to(device, dtype = torch.long)
         rating       = data['rating'].to(device, dtype = torch.float32)
         min_max_normalized_rating = data['min_max_normalized_rating'].to(device, dtype = torch.float32)
-         
+        
+        #print("shapes",user_id, user_feature)
+
         predicted_rating = model.forward(user_id,item_id,user_feature,item_feature)
         batch_size_out, hidden_feature_out = predicted_rating.shape
         predicted_rating = predicted_rating.view([batch_size_out])
@@ -90,7 +93,7 @@ def main(input_paths, do_over_write_standard):
     wandb.init(project="hybridRec_blackcoffee")
     
     config = wandb.config           # Initialize config
-    config.TRAIN_BATCH_SIZE = 2     # input batch size for training (default: 64)
+    config.TRAIN_BATCH_SIZE = 1     # input batch size for training (default: 64)
     config.VALID_BATCH_SIZE = 1     # input batch size for testing (default: 1)
     config.TRAIN_EPOCHS =  65       # number of epochs to train (default: 10)
     config.VAL_EPOCHS = 1  
@@ -112,6 +115,8 @@ def main(input_paths, do_over_write_standard):
     item_map_object.from_dfspots_make_map(df_spot)
     item_map        = item_map_object.spot_map
     number_of_items = item_map_object.number_of_spots
+
+    print(f"# of User : {number_of_users} , #of Item : {number_of_items}")
 
     df_userTaste = df_userTaste.replace({"id" : user_map})
     df_spot      = df_spot.replace({"id" : item_map})
@@ -185,15 +190,7 @@ def main(input_paths, do_over_write_standard):
     user_feature_size = len(dict_user_feature_map)
     item_feature_size = len(dict_item_feature_map)
 
-    model = HybridRecSystem(
-        number_of_users,
-        number_of_items,
-        user_feature_size,
-        item_feature_size,
-        embedding_size = 50,
-        n_hidden = 20
-    )
-    model.to(device)
+    
     #df_train_liked   = df_liked.sample(frac=0.8,random_state=200)
     #df_test_liked    = df_liked.drop(df_train_liked.index)
     #df_train_visited = df_visited.sample(frac=0.8,random_state=200)
@@ -234,6 +231,20 @@ def main(input_paths, do_over_write_standard):
         'shuffle': False,
         'num_workers': 0
     }
+
+    max_user_id = int(HybridRecTrainDataset.max_user_id)
+    max_item_id = int(HybridRecTrainDataset.max_item_id)
+
+    model = HybridRecSystem(
+        int(max_user_id+1),
+        int(max_item_id+1),
+        user_feature_size,
+        item_feature_size,
+        embedding_size = 50,
+        n_hidden = 20
+    )
+    model.to(device)
+
     HybridRecTrainLoader = DataLoader(HybridRecTrainDataset, **train_params)
     HybridRecValidLoader = DataLoader(HybridRecValidDataset, **train_params)
     optimizer = torch.optim.Adam(params =  model.parameters(), lr=config.LEARNING_RATE)

@@ -675,10 +675,23 @@ class HybridRecDataset(Dataset):
 
         df_data = pd.merge(left=df_user_item_interaction, right=df_user_feature_ids, how="left", on="user_id", sort=True)
         df_data = pd.merge(left=df_data, right=df_spot_feature_ids, how="left", on="item_id", sort=True)
+        
         print(df_data)
+
+        df_data = self._resolve_user_feature_NAN(df_data, dict_user_feature_map )
+
+        print(f"User Numbers in dataset {len(df_data.user_id.unique())}")
+        print(f"User from {df_data.user_id.min()} to {df_data.user_id.max()}")
+
+        print(f"Item Numbers in dataset {len(df_data.item_id.unique())}")
+        print(f"Item from {df_data.item_id.min()} to {df_data.item_id.max()}")
+
+        self.max_user_id = df_data.user_id.max()
+        self.max_item_id = df_data.item_id.max()
 
         self.data = df_data.to_dict("index")
         self._min_max_normalize_rating(10.0, 0.0)
+        
         """
         data = {
             "0" : {
@@ -707,6 +720,16 @@ class HybridRecDataset(Dataset):
         self.data = data
 
 
+    def _resolve_user_feature_NAN(
+        self,
+        df_data : pd.DataFrame,
+        dict_user_feature_map : dict
+    ) -> pd.DataFrame:
+        user_feature_ids = [0] * len(dict_user_feature_map)
+        df_data['user_feature'] = df_data['user_feature'].apply(lambda d: d if isinstance(d, list) else user_feature_ids)
+     
+        return df_data
+
 
     def _calculate_ratings(
         self,
@@ -715,9 +738,9 @@ class HybridRecDataset(Dataset):
         rating = 0.0 
 
         if not np.isnan(row["liked_item_id"]):
-            rating = rating + 0.0
+            rating = rating + 2.0
         if not np.isnan(row["visited_item_id"]):
-            rating = rating + 0.5 * min(row['visit_count'] , 20)
+            rating = rating + 0.4 * min(row['visit_count'] , 20)
 
         return rating
     
@@ -762,6 +785,7 @@ class HybridRecDataset(Dataset):
         for theme_name in row['themes']:
             user_feature_ids[dict_user_feature_map[theme_name]] = 1
 
+        print(user_id, user_feature_ids)
         return pd.Series([user_id, user_feature_ids])
 
     def _generate_user_feature_ids(
@@ -787,7 +811,7 @@ class HybridRecDataset(Dataset):
             if theme_name in dict_item_feature_map:
                 item_feature_ids[dict_item_feature_map[theme_name]] = 1
             else :
-                print(theme_name)
+                print(f"No theme for ...\nid :{row['id']}, theme :{row['themes']}")
             
         metroName = row['metroName']
         item_feature_ids[dict_item_feature_map[metroName]] = 1
