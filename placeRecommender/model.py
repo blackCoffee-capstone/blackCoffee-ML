@@ -210,6 +210,8 @@ class HybridRecSystem(torch.nn.Module):
         user_embedding = self.user_embedding(user_id)
         item_embedding = self.item_embedding(item_id)
         
+        #print("Befor User hidden",user_embedding.shape, user_features.shape)
+
         user_hidden_feature = self.relu(torch.cat([user_embedding, user_features], dim = 1))
         user_hidden_feature = self.user_feature_layer(user_hidden_feature)
         user_hidden_feature = user_hidden_feature + user_embedding
