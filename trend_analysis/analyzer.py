@@ -184,7 +184,6 @@ class Analyzer():
         return z_score
 
 
-
     def sort_spot_id_by_distribution(self,
         week : str,
     ) -> list:
@@ -201,7 +200,7 @@ class Analyzer():
             z_score[spot_id] = self._from_normal_distribution_get_z_score(spot_weekly_trend, last_week_index)
         
         z_score = dict(sorted(z_score.items(), key=lambda item: item[1], reverse=True))
-        
+
         sorted_spot_ids_with_rank = []
         
         rank = 1
@@ -247,10 +246,10 @@ class Analyzer():
             # sorted_spot_ids_with_rank = self.sort_spot_id_by_likes_difference(week)
             sorted_spot_ids_with_rank = self.sort_spot_id_by_likes(week)
         
-        
         elif week_index  >= 2:
             #sorted_spot_ids_with_rank = self.sort_spot_id_by_buzz(week)
             sorted_spot_ids_with_rank = self.sort_spot_id_by_distribution(week)
+
         sorted_spot_ids_with_rank = self._set_max_rank(max_length, sorted_spot_ids_with_rank)
 
         return sorted_spot_ids_with_rank

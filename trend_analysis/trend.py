@@ -16,6 +16,8 @@ print(my_analyzer.list_of_weeks)
 
 final_list = []
 
+"""
+## For All Week Update
 for i in my_analyzer.list_of_weeks :
     weekly_dict = {
         "week" : int(i),
@@ -23,7 +25,6 @@ for i in my_analyzer.list_of_weeks :
     }
     
     final_list.append(weekly_dict)
-
 """
 ## For Last Week Update
 last_Week = my_analyzer.list_of_weeks[-1]
@@ -31,8 +32,8 @@ weekly_dict =  {
     "week" : int(last_Week),
     "ranks" : my_analyzer.calculate_trend_rank(last_Week) 
 }
-fianl_list.append()
-"""
+final_list.append(weekly_dict)
+
 
 
 with open(output_file_path, "w", encoding='utf8') as json_file:
