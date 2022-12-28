@@ -476,7 +476,9 @@ class DataExporter():
             "경남",
             "Seoul",
             "Seoul Korea",
-            "Seoul. Korea"
+            "Seoul. Korea",
+            "South Korea",
+            "Daegu"
         ]
     
         if spot_name in filtering_names:
